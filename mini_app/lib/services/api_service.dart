@@ -62,8 +62,9 @@ class ConfirmPaymentRequest {
 }
 
 class ApiService {
-  static const String defaultBaseUrl = 'http://localhost:8080';
+  static const String localhostBaseUrl = 'http://localhost:8080';
   static const String productionBaseUrl = 'https://flutter-mini-app-bridge-test-production.up.railway.app';
+  static const String defaultBaseUrl = productionBaseUrl;
 
   final String baseUrl;
 
