@@ -4,6 +4,7 @@ import 'dart:js' as js;
 
 import '../models/bank_user.dart';
 import '../models/payment_result.dart';
+import '../models/ticket.dart';
 
 class BridgeException implements Exception {
   final String message;
@@ -21,9 +22,11 @@ class BankBridge {
 
   final StreamController<BankUser?> _userStreamController = StreamController<BankUser?>.broadcast();
   final StreamController<PaymentResult> _paymentStreamController = StreamController<PaymentResult>.broadcast();
+  final StreamController<Ticket> _ticketStreamController = StreamController<Ticket>.broadcast();
 
   Stream<BankUser?> get userStream => _userStreamController.stream;
   Stream<PaymentResult> get paymentStream => _paymentStreamController.stream;
+  Stream<Ticket> get ticketStream => _ticketStreamController.stream;
 
   BankUser? _currentUser;
   bool _isInitialized = false;
@@ -32,6 +35,7 @@ class BankBridge {
   // Protected getters for subclasses
   StreamController<BankUser?> get userStreamController => _userStreamController;
   StreamController<PaymentResult> get paymentStreamController => _paymentStreamController;
+  StreamController<Ticket> get ticketStreamController => _ticketStreamController;
 
   // Protected setters for subclasses
   set currentUser(BankUser? user) => _currentUser = user;
@@ -110,6 +114,10 @@ class BankBridge {
         case 'PAYMENT_RESULT':
           print('[BridgeService] 💳 Handling PAYMENT_RESULT message');
           _handlePaymentResult(message['data']);
+          break;
+        case 'TICKET_ISSUED':
+          print('[BridgeService] 🎫 Handling TICKET_ISSUED message');
+          _handleTicketIssued(message['data']);
           break;
         default:
           print('[BridgeService] ❓ Unknown message type: $type');
@@ -191,6 +199,7 @@ class BankBridge {
     required String currency,
     required String reference,
     String? description,
+    String? bookingId,
   }) async {
     if (!_isInitialized) {
       throw BridgeException('Bridge not initialized', 'NOT_INITIALIZED');
@@ -225,6 +234,7 @@ class BankBridge {
         'currency': currency,
         'reference': reference,
         'description': description,
+        'bookingId': bookingId,
       },
     };
 
@@ -280,8 +290,29 @@ class BankBridge {
     }
   }
 
+  void _handleTicketIssued(dynamic ticketData) {
+    try {
+      Map<String, dynamic> ticketMap;
+
+      if (ticketData is Map) {
+        ticketMap = Map<String, dynamic>.from(ticketData);
+        print('[BridgeService] 📋 Converted ticket data from ${ticketData.runtimeType}');
+      } else {
+        print('[BridgeService] ❌ Ticket data is not a Map: ${ticketData.runtimeType}');
+        return;
+      }
+
+      final ticket = Ticket.fromJson(ticketMap);
+      _ticketStreamController.add(ticket);
+      print('[BridgeService] ✅ Ticket received: ${ticket.ticketNumber} for booking ${ticket.bookingId}');
+    } catch (e) {
+      print('[BridgeService] ❌ Error processing ticket: $e');
+    }
+  }
+
   void dispose() {
     _userStreamController.close();
     _paymentStreamController.close();
+    _ticketStreamController.close();
   }
 }

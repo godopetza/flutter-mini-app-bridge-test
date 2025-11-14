@@ -139,7 +139,7 @@ Bridge console ready - messages will appear here...
                         email: 'ben.test@email.com',
                         phone: '+255712345678',
                         token: 'host-token-abc123',
-                        accountNumber: '1234567890',
+                        accountNumber: '1111222233334444', // Clearly different from mock
                         dataSource: 'HOST_APP',
                         bridgeVersion: '1.0.0',
                         timestamp: new Date().toISOString()
@@ -171,8 +171,15 @@ Bridge console ready - messages will appear here...
 
             // Handle incoming messages from mini app
             handleMessage(message) {
-                if (!message || typeof message !== 'object') return;
+                console.log('🎯 === HOST APP MESSAGE HANDLER ===');
+                console.log('📥 Raw message received:', message);
 
+                if (!message || typeof message !== 'object') {
+                    console.log('❌ Invalid message format');
+                    return;
+                }
+
+                console.log(`📨 Message type: ${message.type}`);
                 this.log(`📨 Received: ${message.type}`);
 
                 switch (message.type) {
@@ -225,20 +232,29 @@ Bridge console ready - messages will appear here...
 
             // Handle payment initiation request from mini app
             handlePaymentRequest(paymentData) {
+                console.log('🚀 === HOST APP PAYMENT REQUEST ===');
+                console.log('📨 Received INITIATE_PAYMENT message');
+                console.log('📋 Payment data:', JSON.stringify(paymentData, null, 2));
+
                 if (!paymentData) {
                     this.log('❌ Invalid payment data');
+                    console.log('❌ Payment request rejected - no data');
                     return;
                 }
 
-                const { amount, currency, reference, description } = paymentData;
+                const { amount, currency, reference, description, bookingId } = paymentData;
                 this.log(`💳 Processing payment: ${amount} ${currency} (${reference})`);
                 this.log(`📄 Description: ${description || 'N/A'}`);
+                this.log(`📋 Booking ID: ${bookingId}`);
+                console.log(`💰 Payment details - Amount: ${amount}, Currency: ${currency}, Reference: ${reference}`);
 
                 // Store payment data for later use
-                this.currentPayment = { amount, currency, reference, description };
+                this.currentPayment = { amount, currency, reference, description, bookingId };
 
                 // Close the iframe and show PIN entry
+                console.log('🔄 Closing iframe and showing PIN entry...');
                 this.closeIframeAndShowPinEntry();
+                console.log('🚀 === END PAYMENT REQUEST HANDLING ===');
             }
 
             // Handle booking success notification from mini app
@@ -422,35 +438,272 @@ Bridge console ready - messages will appear here...
                 });
             }
 
+            // PIN Validation Logic
+            validatePIN(pin) {
+                console.log(`🔍 === PIN VALIDATION ===`);
+                console.log(`📌 Entered PIN: ${pin}`);
+
+                switch (pin) {
+                    case '0000':
+                        console.log('✅ PIN Valid - Success');
+                        this.log('✅ PIN accepted - Payment approved');
+                        return { status: 'success', message: 'PIN accepted' };
+
+                    case '1111':
+                        console.log('❌ PIN Invalid - Failed');
+                        this.log('❌ Invalid PIN - Payment denied');
+                        return { status: 'failed', message: 'Invalid PIN. Please try again.' };
+
+                    case '2222':
+                        console.log('⏳ PIN Pending - Requires manual review');
+                        this.log('⏳ PIN requires manual verification');
+                        return { status: 'pending', message: 'Payment pending manual verification' };
+
+                    default:
+                        console.log('❓ PIN Unknown - Invalid');
+                        this.log(`❓ Unrecognized PIN pattern: ${pin.replace(/./g, '•')}`);
+                        return { status: 'invalid', message: 'Invalid PIN. Please use test PIN: 0000 (success), 1111 (fail), or 2222 (pending)' };
+                }
+            }
+
+            // Show PIN error with retry option
+            showPinError(message) {
+                const pinInput = document.getElementById('pin-input');
+                const confirmBtn = document.getElementById('confirm-payment-btn');
+
+                // Reset button state
+                confirmBtn.textContent = 'Confirm Payment';
+                confirmBtn.disabled = false;
+
+                // Clear PIN input
+                pinInput.value = '';
+                pinInput.focus();
+
+                // Show error message
+                this.showPaymentError(message);
+            }
+
+            // Handle pending payment flow
+            async handlePendingPayment(pin) {
+                const confirmBtn = document.getElementById('confirm-payment-btn');
+
+                try {
+                    confirmBtn.textContent = 'Payment Pending...';
+                    this.log('⏳ Payment is pending manual verification');
+
+                    // Simulate pending review process
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+
+                    // Simulate random resolution (70% success, 30% fail for demo)
+                    const isApproved = Math.random() > 0.3;
+
+                    if (isApproved) {
+                        this.log('✅ Pending payment approved after manual review');
+                        confirmBtn.textContent = 'Payment Approved - Processing...';
+
+                        // Continue with normal payment flow
+                        const transactionId = `TXN-PENDING-${Date.now()}`;
+                        this.log(`💳 Pending payment processed: ${transactionId}`);
+
+                        // Proceed to backend confirmation
+                        await this.proceedWithPaymentConfirmation(transactionId);
+                    } else {
+                        throw new Error('Payment was rejected after manual review');
+                    }
+
+                } catch (error) {
+                    this.log(`❌ Pending payment failed: ${error.message}`);
+                    this.showPinError('Payment was rejected after manual review. Please try a different PIN.');
+                }
+            }
+
+            // Proceed with payment confirmation (extracted for reuse)
+            async proceedWithPaymentConfirmation(transactionId) {
+                const confirmBtn = document.getElementById('confirm-payment-btn');
+
+                confirmBtn.textContent = 'Confirming with backend...';
+                this.log(`🔄 Confirming payment with backend...`);
+
+                const confirmResponse = await this.confirmPaymentWithBackend(transactionId);
+
+                if (confirmResponse.success) {
+                    this.log(`✅ Payment confirmed with backend`);
+                    this.sendTicketToFlutter(confirmResponse.booking);
+                } else {
+                    throw new Error(confirmResponse.error || 'Backend confirmation failed');
+                }
+            }
+
             // Process payment with PIN
-            processPayment(pin) {
+            async processPayment(pin) {
                 this.log(`🔐 Processing payment with PIN: ${pin.replace(/./g, '•')}`);
+
+                // PIN Validation Logic
+                const pinValidationResult = this.validatePIN(pin);
+
+                if (pinValidationResult.status === 'invalid') {
+                    this.showPinError(pinValidationResult.message);
+                    return;
+                }
+
+                if (pinValidationResult.status === 'failed') {
+                    this.showPinError(pinValidationResult.message);
+                    return;
+                }
 
                 // Simulate payment processing
                 const confirmBtn = document.getElementById('confirm-payment-btn');
                 confirmBtn.textContent = 'Processing...';
                 confirmBtn.disabled = true;
 
+                try {
+                    if (pinValidationResult.status === 'pending') {
+                        await this.handlePendingPayment(pin);
+                        return;
+                    }
+
+                    // Step 1: Simulate local payment processing (for successful PIN)
+                    await new Promise(resolve => setTimeout(resolve, 1500));
+
+                    // Step 2: Generate transaction result
+                    const transactionId = `TXN-${Date.now()}`;
+                    this.log(`💳 Local payment processed: ${transactionId}`);
+
+                    // Step 3: Proceed with payment confirmation using the new method
+                    await this.proceedWithPaymentConfirmation(transactionId);
+
+                    // Show host app success screen (moved here to be consistent)
+                    this.showTicketScreen();
+                } catch (error) {
+                    this.log(`❌ Payment failed: ${error.message}`);
+                    this.showPaymentError(error.message);
+                }
+            }
+
+            // Confirm payment with backend API
+            async confirmPaymentWithBackend(transactionId) {
+                const maxRetries = 3;
+                let attempt = 0;
+
+                while (attempt < maxRetries) {
+                    try {
+                        this.log(`🔄 Attempting backend confirmation (attempt ${attempt + 1}/${maxRetries})`);
+
+                        const response = await fetch(`http://localhost:8080/api/bookings/${this.currentPayment.bookingId}/confirm`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'Authorization': `Bearer ${this.currentUser.token}`,
+                                'X-Request-Source': 'host-app',
+                                'X-Request-ID': `req-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+                            },
+                            body: JSON.stringify({
+                                transaction_id: transactionId,
+                                payment_method: 'bank_app_pin',
+                                amount: this.currentPayment.amount
+                            })
+                        });
+
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({ error: 'Unknown error' }));
+                            const errorMessage = errorData.error || `API error: ${response.status} ${response.statusText}`;
+
+                            if (response.status >= 500) {
+                                // Server error - retry
+                                attempt++;
+                                this.log(`⚠️ Server error (${response.status}), retrying...`);
+                                if (attempt < maxRetries) {
+                                    await new Promise(resolve => setTimeout(resolve, 1000 * attempt)); // Exponential backoff
+                                    continue;
+                                }
+                            }
+
+                            return { success: false, error: errorMessage };
+                        }
+
+                        const booking = await response.json();
+                        this.log(`✅ Backend confirmation successful on attempt ${attempt + 1}`);
+                        return { success: true, booking };
+
+                    } catch (error) {
+                        attempt++;
+                        this.log(`❌ Network error (attempt ${attempt}): ${error.message}`);
+
+                        if (attempt < maxRetries) {
+                            await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+                            continue;
+                        }
+
+                        return { success: false, error: `Network error after ${maxRetries} attempts: ${error.message}` };
+                    }
+                }
+            }
+
+            // Send ticket data to Flutter via bridge
+            sendTicketToFlutter(booking) {
+                const ticketMessage = {
+                    type: 'TICKET_ISSUED',
+                    data: {
+                        bookingId: booking.booking_id,
+                        ticketNumber: booking.ticket_number,
+                        transactionId: booking.transaction_id,
+                        amount: booking.amount,
+                        currency: booking.currency,
+                        route: {
+                            origin: 'Dar es Salaam', // These would come from the booking data
+                            destination: 'Mwanza'
+                        },
+                        passengers: booking.passenger_details,
+                        seatNumbers: booking.seat_numbers,
+                        departureDate: booking.departure_date,
+                        status: booking.status,
+                        qrCode: booking.qr_code,
+                        createdAt: booking.created_at
+                    }
+                };
+
+                this.postToMiniApp(ticketMessage);
+                this.log(`🎫 Sent ticket data to Flutter: ${booking.ticket_number}`);
+            }
+
+            // Show payment error
+            showPaymentError(errorMessage) {
+                const confirmBtn = document.getElementById('confirm-payment-btn');
+                confirmBtn.textContent = 'Payment Failed';
+                confirmBtn.style.background = '#f44336';
+                confirmBtn.disabled = true;
+
+                // Show error message
+                const pinContainer = document.getElementById('pin-container');
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = `
+                    background: #ffebee;
+                    border: 1px solid #f44336;
+                    color: #c62828;
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin-top: 15px;
+                    text-align: center;
+                `;
+                errorDiv.innerHTML = `
+                    <strong>Payment Failed</strong><br>
+                    ${errorMessage}<br>
+                    <button id="error-close-btn" style="margin-top: 10px; padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Close
+                    </button>
+                `;
+
+                // Add event listener for close button
                 setTimeout(() => {
-                    // Simulate successful payment (in real app, validate PIN with backend)
-                    const paymentResult = {
-                        success: true,
-                        transactionId: `TXN-${Date.now()}`,
-                        timestamp: new Date().toISOString(),
-                        amount: this.currentPayment.amount,
-                        currency: this.currentPayment.currency,
-                        reference: this.currentPayment.reference
-                    };
-
-                    this.log(`✅ Payment successful: ${paymentResult.transactionId}`);
-
-                    // Show ticket/success screen
-                    this.showTicketScreen(paymentResult);
-                }, 2000);
+                    document.getElementById('error-close-btn').addEventListener('click', () => {
+                        this.cancelPayment();
+                    });
+                }, 100);
+                pinContainer.appendChild(errorDiv);
             }
 
             // Show ticket/success screen
-            showTicketScreen(paymentResult) {
+            showTicketScreen(booking) {
                 const ticketContainer = document.createElement('div');
                 ticketContainer.id = 'ticket-container';
                 ticketContainer.style.cssText = `
@@ -465,35 +718,36 @@ Bridge console ready - messages will appear here...
                     text-align: center;
                 `;
 
-                const bookingId = `BK-${Date.now()}`;
-                const ticketNumber = `TK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-
                 ticketContainer.innerHTML = `
                     <div style="background: white; padding: 30px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 500px; width: 100%;">
                         <div style="font-size: 64px; margin-bottom: 20px;">🎫</div>
                         <h1 style="margin: 0 0 10px 0; color: #4CAF50;">Payment Successful!</h1>
-                        <p style="color: #666; margin-bottom: 30px;">Your bus ticket has been booked</p>
+                        <p style="color: #666; margin-bottom: 30px;">Your bus ticket has been confirmed</p>
 
                         <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: left;">
                             <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                                 <span style="font-weight: bold;">Booking ID:</span>
-                                <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px;">${bookingId}</span>
+                                <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px;">${booking.booking_id}</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                                 <span style="font-weight: bold;">Ticket Number:</span>
-                                <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px;">${ticketNumber}</span>
+                                <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px;">${booking.ticket_number}</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                                 <span style="font-weight: bold;">Transaction ID:</span>
-                                <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px;">${paymentResult.transactionId}</span>
+                                <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px;">${booking.transaction_id}</span>
                             </div>
                             <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
                                 <span style="font-weight: bold;">Amount Paid:</span>
-                                <span style="color: #4CAF50; font-weight: bold;">${paymentResult.currency} ${paymentResult.amount.toLocaleString()}</span>
+                                <span style="color: #4CAF50; font-weight: bold;">${booking.currency} ${booking.amount.toLocaleString()}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span style="font-weight: bold;">Seats:</span>
+                                <span>${booking.seat_numbers.join(', ')}</span>
                             </div>
                             <div style="display: flex; justify-content: space-between;">
                                 <span style="font-weight: bold;">Date & Time:</span>
-                                <span>${new Date().toLocaleString()}</span>
+                                <span>${new Date(booking.created_at).toLocaleString()}</span>
                             </div>
                         </div>
 
@@ -529,7 +783,7 @@ Bridge console ready - messages will appear here...
                 });
 
                 // Update status
-                this.updateStatus('Payment Completed ✅', `${this.currentUser.name} - Last booking: ${bookingId}`);
+                this.updateStatus('Payment Completed ✅', `${this.currentUser.name} - Last booking: ${booking.booking_id}`);
             }
 
             // Cancel payment and return to mini app

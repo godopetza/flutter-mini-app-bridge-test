@@ -2,6 +2,7 @@ package services
 
 import (
 	"fmt"
+	"log"
 	"strconv"
 	"sync"
 	"time"
@@ -114,18 +115,34 @@ func (s *BookingService) GetBooking(bookingID string) (*models.Booking, error) {
 }
 
 func (s *BookingService) ConfirmPayment(bookingID string, req models.ConfirmPaymentRequest) (*models.Booking, error) {
+	log.Printf("[BookingService] Confirming payment for booking %s with transaction %s", bookingID, req.TransactionID)
+
 	booking, err := s.GetBooking(bookingID)
 	if err != nil {
+		log.Printf("[BookingService] Error: booking %s not found: %v", bookingID, err)
 		return nil, err
 	}
 
+	log.Printf("[BookingService] Current booking status: %s", booking.Status)
+
 	if booking.Status != "pending_payment" {
-		return nil, fmt.Errorf("booking is not in pending payment status")
+		log.Printf("[BookingService] Error: booking %s is not in pending payment status, current: %s", bookingID, booking.Status)
+		return nil, fmt.Errorf("booking is not in pending payment status, current status: %s", booking.Status)
 	}
 
 	if req.Amount != booking.Amount {
-		return nil, fmt.Errorf("payment amount does not match booking amount")
+		log.Printf("[BookingService] Error: payment amount mismatch for booking %s. Expected: %d, Got: %d", bookingID, booking.Amount, req.Amount)
+		return nil, fmt.Errorf("payment amount does not match booking amount. Expected: %d, Got: %d", booking.Amount, req.Amount)
 	}
+
+	// Validate transaction ID is not already used
+	s.bookings.Range(func(key, value interface{}) bool {
+		existingBooking, ok := value.(*models.Booking)
+		if ok && existingBooking.TransactionID == req.TransactionID && existingBooking.ID != bookingID {
+			log.Printf("[BookingService] Warning: Transaction ID %s already used by booking %s", req.TransactionID, existingBooking.ID)
+		}
+		return true
+	})
 
 	booking.TransactionID = req.TransactionID
 	booking.PaymentMethod = req.PaymentMethod
@@ -134,6 +151,8 @@ func (s *BookingService) ConfirmPayment(bookingID string, req models.ConfirmPaym
 	booking.QRCode = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
 
 	s.bookings.Store(bookingID, booking)
+
+	log.Printf("[BookingService] Successfully confirmed payment for booking %s, issued ticket %s", bookingID, booking.TicketNumber)
 	return booking, nil
 }
 

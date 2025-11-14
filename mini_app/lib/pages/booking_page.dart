@@ -635,8 +635,23 @@ class _BookingPageState extends State<BookingPage> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'User: ${_currentUser!.name} (${_currentUser!.userId})',
+                    'User: ${_currentUser!.name}',
                     style: TextStyle(color: color, fontSize: 12),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Account: ${_currentUser!.accountNumber}',
+                    style: TextStyle(
+                      color: color,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'monospace'
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    'Source: ${_currentUser!.dataSource ?? 'UNKNOWN'}',
+                    style: TextStyle(color: color, fontSize: 10),
                   ),
                   if (_currentUser!.bridgeVersion != null)
                     Text(

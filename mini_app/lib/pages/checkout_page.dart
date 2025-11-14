@@ -1,14 +1,17 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'dart:html' as html;
 
 import '../models/bus_route.dart';
 import '../models/booking.dart';
 import '../models/bank_user.dart';
 import '../models/payment_result.dart';
+import '../models/ticket.dart';
 import '../services/api_service.dart';
 import '../services/bank_bridge.dart';
 import '../services/mock_bridge.dart';
 import 'success_page.dart';
+import 'ticket_page.dart';
 
 class CheckoutPage extends StatefulWidget {
   final Map<String, dynamic> bookingData;
@@ -33,7 +36,34 @@ class _CheckoutPageState extends State<CheckoutPage> {
   void initState() {
     super.initState();
 
-    _bridge = kDebugMode ? MockBridge() : BankBridge();
+    // Use iframe detection to determine bridge type - same logic as booking page
+    print('[CheckoutPage] 🚀 === CHECKOUT PAGE BRIDGE SELECTION ===');
+    print('[CheckoutPage] 🔍 html.window: ${html.window}');
+    print('[CheckoutPage] 🔍 html.window.parent: ${html.window.parent}');
+    print('[CheckoutPage] 🔍 window == parent: ${html.window == html.window.parent}');
+
+    final isInIframe = html.window.parent != html.window;
+    print('[CheckoutPage] 🔍 Environment check:');
+    print('[CheckoutPage] 🔍 Is in iframe: $isInIframe');
+    print('[CheckoutPage] 🔍 kDebugMode: $kDebugMode');
+    print('[CheckoutPage] 🔍 Current URL: ${html.window.location.href}');
+
+    // Force explicit bridge selection
+    BankBridge bridgeToUse;
+    if (isInIframe) {
+      bridgeToUse = BankBridge(); // Real bridge when in iframe (host app)
+      print('[CheckoutPage] ✅ SELECTED: BankBridge (real bridge) - running in host app');
+    } else {
+      bridgeToUse = MockBridge(); // Mock bridge when standalone
+      print('[CheckoutPage] ✅ SELECTED: MockBridge - running standalone');
+    }
+
+    _bridge = bridgeToUse;
+    print('[CheckoutPage] 🎯 Final bridge type: ${_bridge.runtimeType}');
+    print('[CheckoutPage] 🔍 Bridge is MockBridge: ${_bridge is MockBridge}');
+    print('[CheckoutPage] 🔍 Bridge is BankBridge: ${_bridge is BankBridge}');
+    print('[CheckoutPage] 🚀 === END BRIDGE SELECTION ===');
+
     _apiService = ApiService();
 
     _initializeBridge();
@@ -78,6 +108,18 @@ class _CheckoutPageState extends State<CheckoutPage> {
         }
       },
     );
+
+    // Listen for tickets from host app
+    _bridge.ticketStream.listen(
+      (ticket) {
+        if (mounted) {
+          _handleTicketReceived(ticket);
+        }
+      },
+      onError: (error) {
+        print('[CheckoutPage] ❌ Ticket stream error: $error');
+      },
+    );
   }
 
   Future<void> _initializeBridge() async {
@@ -91,6 +133,23 @@ class _CheckoutPageState extends State<CheckoutPage> {
         });
       }
     }
+  }
+
+  // Handle tickets received from host app
+  void _handleTicketReceived(Ticket ticket) {
+    print('[CheckoutPage] 🎫 Ticket received: ${ticket.ticketNumber}');
+
+    setState(() {
+      _isPaymentInProgress = false;
+    });
+
+    // Navigate to ticket page
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => TicketPage(ticket: ticket),
+      ),
+    );
   }
 
   Future<void> _handlePaymentResult(PaymentResult result) async {
@@ -251,7 +310,38 @@ class _CheckoutPageState extends State<CheckoutPage> {
               children: [
                 const Icon(Icons.account_balance, size: 20),
                 const SizedBox(width: 8),
-                Text('Account: ${_user!.accountNumber}'),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Account: ${_user!.accountNumber}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'monospace',
+                        ),
+                      ),
+                      if (_user!.dataSource != null)
+                        Text(
+                          'Source: ${_user!.dataSource}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: _user!.dataSource == 'HOST_APP' ? Colors.green : Colors.blue,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      // Show bridge type for debugging
+                      Text(
+                        'Bridge: ${_bridge.runtimeType}',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: _bridge is MockBridge ? Colors.orange : Colors.purple,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ],
@@ -386,11 +476,14 @@ class _CheckoutPageState extends State<CheckoutPage> {
       final booking = await _apiService.createBooking(createRequest, _user!.token);
       _booking = booking;
 
+      print('[CheckoutPage] 📋 Created booking: ${booking.id}');
+
       await _bridge.initiatePayment(
         amount: booking.amount,
         currency: booking.currency,
         reference: booking.paymentReference,
         description: 'Bus ticket: ${route.origin} to ${route.destination}',
+        bookingId: booking.id, // Add booking ID for host app verification
       );
     } catch (e) {
       setState(() {
