@@ -825,10 +825,16 @@
                 const iframe = document.getElementById('mini-app-frame');
                 iframe.style.display = 'block';
 
+                // Send reset message to Flutter app to navigate to home
+                this.postToMiniApp({
+                    type: 'RESET_TO_HOME',
+                    data: { message: 'Starting new booking session' }
+                });
+
                 // Reset status
                 this.updateStatus('Ready ✅', `${this.currentUser.name} (${this.currentUser.accountNumber})`);
 
-                this.log('🔄 Returned to mini app');
+                this.log('🔄 Returned to mini app - sent reset signal');
             }
 
             // Add log message to console display

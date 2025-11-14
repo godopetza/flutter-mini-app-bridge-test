@@ -23,10 +23,12 @@ class BankBridge {
   final StreamController<BankUser?> _userStreamController = StreamController<BankUser?>.broadcast();
   final StreamController<PaymentResult> _paymentStreamController = StreamController<PaymentResult>.broadcast();
   final StreamController<Ticket> _ticketStreamController = StreamController<Ticket>.broadcast();
+  final StreamController<void> _resetStreamController = StreamController<void>.broadcast();
 
   Stream<BankUser?> get userStream => _userStreamController.stream;
   Stream<PaymentResult> get paymentStream => _paymentStreamController.stream;
   Stream<Ticket> get ticketStream => _ticketStreamController.stream;
+  Stream<void> get resetStream => _resetStreamController.stream;
 
   BankUser? _currentUser;
   bool _isInitialized = false;
@@ -118,6 +120,10 @@ class BankBridge {
         case 'TICKET_ISSUED':
           print('[BridgeService] 🎫 Handling TICKET_ISSUED message');
           _handleTicketIssued(message['data']);
+          break;
+        case 'RESET_TO_HOME':
+          print('[BridgeService] 🔄 Handling RESET_TO_HOME message');
+          _handleResetToHome();
           break;
         default:
           print('[BridgeService] ❓ Unknown message type: $type');
@@ -310,9 +316,15 @@ class BankBridge {
     }
   }
 
+  void _handleResetToHome() {
+    print('[BridgeService] ✅ Reset to home requested by host app');
+    _resetStreamController.add(null);
+  }
+
   void dispose() {
     _userStreamController.close();
     _paymentStreamController.close();
     _ticketStreamController.close();
+    _resetStreamController.close();
   }
 }
