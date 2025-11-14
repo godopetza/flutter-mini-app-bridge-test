@@ -45,7 +45,7 @@ jobs:
       run: |
         flutter build web \
           --release \
-          --base-href="/mini-app-bridge-test/mini_app/" \
+          --base-href="/flutter-mini-app-bridge-test/mini_app/" \
           --web-renderer=html
 
     - name: Update API URLs for production

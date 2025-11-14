@@ -811,7 +811,7 @@ PORT=8080 ./main
 
 # Flutter (GitHub Pages)
 cd mini_app
-flutter build web --release --base-href="/mini-app-bridge-test/mini_app/"
+flutter build web --release --base-href="/flutter-mini-app-bridge-test/mini_app/"
 
 # Host App (GitHub Pages)
 cd host-app

@@ -119,6 +119,7 @@
                 this.isReady = false;
                 this.currentUser = null;
                 this.currentPayment = null;
+                this.pinAttempts = 0;
                 this.logElement = document.getElementById('bridge-logs');
                 this.statusElement = document.getElementById('bridge-status');
                 this.userElement = document.getElementById('current-user');
@@ -353,6 +354,9 @@
             closeIframeAndShowPinEntry() {
                 this.log('🔐 Initiating secure payment flow...');
 
+                // Reset PIN attempts for new payment
+                this.pinAttempts = 0;
+
                 // Hide iframe
                 const iframe = document.getElementById('mini-app-frame');
                 iframe.style.display = 'none';
@@ -389,9 +393,17 @@
 
                         <div style="margin-bottom: 30px;">
                             <label style="display: block; margin-bottom: 10px; font-weight: bold;">Enter your 4-digit PIN:</label>
-                            <input type="password" id="pin-input" maxlength="4"
-                                   style="width: 120px; height: 50px; font-size: 24px; text-align: center; border: 2px solid #ddd; border-radius: 10px; letter-spacing: 8px;"
-                                   placeholder="••••">
+                            <div style="position: relative; display: inline-block;">
+                                <input type="password" id="pin-input" maxlength="4"
+                                       style="width: 120px; height: 50px; font-size: 24px; text-align: center; border: 2px solid #ddd; border-radius: 10px; letter-spacing: 8px; transition: all 0.3s ease;"
+                                       placeholder="••••">
+                                <div id="pin-strength" style="position: absolute; right: -30px; top: 50%; transform: translateY(-50%); font-size: 20px;"></div>
+                            </div>
+                            <div style="font-size: 12px; color: #666; margin-top: 8px;">
+                                Test PINs: <span style="font-family: monospace; background: #e9ecef; padding: 2px 4px; border-radius: 3px;">0000</span> (success),
+                                <span style="font-family: monospace; background: #e9ecef; padding: 2px 4px; border-radius: 3px;">1111</span> (fail),
+                                <span style="font-family: monospace; background: #e9ecef; padding: 2px 4px; border-radius: 3px;">2222</span> (pending)
+                            </div>
                         </div>
 
                         <button id="confirm-payment-btn"
@@ -417,10 +429,44 @@
 
                 pinInput.focus();
 
+                let autoProcessTimeout;
                 pinInput.addEventListener('input', () => {
-                    if (pinInput.value.length === 4) {
+                    const pinStrength = document.getElementById('pin-strength');
+                    const pinLength = pinInput.value.length;
+
+                    // Clear any existing timeout
+                    if (autoProcessTimeout) {
+                        clearTimeout(autoProcessTimeout);
+                        autoProcessTimeout = null;
+                    }
+
+                    // Update visual feedback
+                    if (pinLength === 0) {
+                        pinInput.style.borderColor = '#ddd';
+                        pinStrength.textContent = '';
+                    } else if (pinLength < 4) {
+                        pinInput.style.borderColor = '#ffc107';
+                        pinStrength.textContent = '⏳';
+                    } else {
+                        pinInput.style.borderColor = '#28a745';
+                        pinStrength.textContent = '✅';
+                    }
+
+                    if (pinLength === 4) {
+                        // Show ready state
                         confirmBtn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
-                        confirmBtn.textContent = 'Processing...';
+                        confirmBtn.textContent = 'Ready - Click to Confirm';
+
+                        // Auto-process after 1.5 seconds (optional)
+                        autoProcessTimeout = setTimeout(() => {
+                            if (pinInput.value.length === 4 && !confirmBtn.disabled) {
+                                this.processPayment(pinInput.value);
+                            }
+                        }, 1500);
+                    } else {
+                        // Reset button to default state
+                        confirmBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                        confirmBtn.textContent = 'Confirm Payment';
                     }
                 });
 
@@ -467,20 +513,21 @@
             }
 
             // Show PIN error with retry option
-            showPinError(message) {
+            showPinError(message, attempts = 0) {
                 const pinInput = document.getElementById('pin-input');
                 const confirmBtn = document.getElementById('confirm-payment-btn');
 
                 // Reset button state
                 confirmBtn.textContent = 'Confirm Payment';
                 confirmBtn.disabled = false;
+                confirmBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
 
                 // Clear PIN input
                 pinInput.value = '';
                 pinInput.focus();
 
-                // Show error message
-                this.showPaymentError(message);
+                // Show error message with retry option
+                this.showPinRetryError(message, attempts);
             }
 
             // Handle pending payment flow
@@ -542,23 +589,32 @@
             async processPayment(pin) {
                 this.log(`🔐 Processing payment with PIN: ${pin.replace(/./g, '•')}`);
 
+                // Clear any auto-processing timeout
+                const pinInput = document.getElementById('pin-input');
+                if (pinInput.autoProcessTimeout) {
+                    clearTimeout(pinInput.autoProcessTimeout);
+                }
+
                 // PIN Validation Logic
                 const pinValidationResult = this.validatePIN(pin);
 
                 if (pinValidationResult.status === 'invalid') {
-                    this.showPinError(pinValidationResult.message);
+                    this.pinAttempts++;
+                    this.showPinError(pinValidationResult.message, this.pinAttempts);
                     return;
                 }
 
                 if (pinValidationResult.status === 'failed') {
-                    this.showPinError(pinValidationResult.message);
+                    this.pinAttempts++;
+                    this.showPinError(pinValidationResult.message, this.pinAttempts);
                     return;
                 }
 
-                // Simulate payment processing
+                // Update button to processing state
                 const confirmBtn = document.getElementById('confirm-payment-btn');
-                confirmBtn.textContent = 'Processing...';
+                confirmBtn.textContent = 'Processing Payment...';
                 confirmBtn.disabled = true;
+                confirmBtn.style.background = '#9E9E9E';
 
                 try {
                     if (pinValidationResult.status === 'pending') {
@@ -687,7 +743,80 @@
                 this.log(`🎫 Sent ticket data to Flutter: ${booking.ticket_number}`);
             }
 
-            // Show payment error
+            // Show PIN retry error (for PIN validation failures)
+            showPinRetryError(message, attempts) {
+                // Remove any existing error
+                const existingError = document.getElementById('pin-error-div');
+                if (existingError) existingError.remove();
+
+                const pinContainer = document.getElementById('pin-container');
+                const errorDiv = document.createElement('div');
+                errorDiv.id = 'pin-error-div';
+                errorDiv.style.cssText = `
+                    background: #fff3cd;
+                    border: 1px solid #ffc107;
+                    color: #856404;
+                    padding: 15px;
+                    border-radius: 8px;
+                    margin-top: 15px;
+                    text-align: center;
+                    animation: shake 0.5s ease-in-out;
+                `;
+
+                const maxAttempts = 3;
+                const remainingAttempts = maxAttempts - attempts;
+
+                errorDiv.innerHTML = `
+                    <div style="margin-bottom: 10px;">
+                        <strong>❌ ${message}</strong>
+                    </div>
+                    <div style="font-size: 14px; margin-bottom: 15px; opacity: 0.8;">
+                        ${remainingAttempts > 0 ? `${remainingAttempts} attempts remaining` : 'No attempts remaining'}
+                    </div>
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button id="retry-pin-btn" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                            ↻ Try Again
+                        </button>
+                        <button id="cancel-retry-btn" style="padding: 8px 16px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            Cancel Payment
+                        </button>
+                    </div>
+                `;
+
+                pinContainer.appendChild(errorDiv);
+
+                // Add animation
+                const style = document.createElement('style');
+                style.textContent = `
+                    @keyframes shake {
+                        0%, 100% { transform: translateX(0); }
+                        25% { transform: translateX(-5px); }
+                        75% { transform: translateX(5px); }
+                    }
+                `;
+                document.head.appendChild(style);
+
+                // Add event listeners
+                setTimeout(() => {
+                    document.getElementById('retry-pin-btn').addEventListener('click', () => {
+                        errorDiv.remove();
+                        document.getElementById('pin-input').focus();
+                    });
+
+                    document.getElementById('cancel-retry-btn').addEventListener('click', () => {
+                        this.cancelPayment();
+                    });
+                }, 100);
+
+                // Auto-remove error after 8 seconds
+                setTimeout(() => {
+                    if (errorDiv.parentNode) {
+                        errorDiv.remove();
+                    }
+                }, 8000);
+            }
+
+            // Show payment error (for payment processing failures)
             showPaymentError(errorMessage) {
                 const confirmBtn = document.getElementById('confirm-payment-btn');
                 confirmBtn.textContent = 'Payment Failed';
@@ -709,13 +838,28 @@
                 errorDiv.innerHTML = `
                     <strong>Payment Failed</strong><br>
                     ${errorMessage}<br>
-                    <button id="error-close-btn" style="margin-top: 10px; padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
-                        Close
-                    </button>
+                    <div style="display: flex; gap: 10px; justify-content: center; margin-top: 15px;">
+                        <button id="retry-payment-btn" style="padding: 8px 16px; background: #28a745; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                            ↻ Try Again
+                        </button>
+                        <button id="error-close-btn" style="padding: 8px 16px; background: #f44336; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            Cancel
+                        </button>
+                    </div>
                 `;
 
-                // Add event listener for close button
+                // Add event listeners
                 setTimeout(() => {
+                    document.getElementById('retry-payment-btn').addEventListener('click', () => {
+                        // Reset to PIN entry state
+                        errorDiv.remove();
+                        confirmBtn.textContent = 'Confirm Payment';
+                        confirmBtn.style.background = 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)';
+                        confirmBtn.disabled = false;
+                        document.getElementById('pin-input').value = '';
+                        document.getElementById('pin-input').focus();
+                    });
+
                     document.getElementById('error-close-btn').addEventListener('click', () => {
                         this.cancelPayment();
                     });
