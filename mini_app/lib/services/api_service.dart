@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:html' as html;
 import 'package:http/http.dart' as http;
 
 import '../models/bus_route.dart';
@@ -62,9 +63,31 @@ class ConfirmPaymentRequest {
 
 class ApiService {
   static const String defaultBaseUrl = 'http://localhost:8080';
+  static const String productionBaseUrl = 'https://flutter-mini-app-bridge-test-production.up.railway.app';
+
   final String baseUrl;
 
-  ApiService({this.baseUrl = defaultBaseUrl});
+  ApiService({String? baseUrl}) : baseUrl = baseUrl ?? _getBaseUrl();
+
+  // Auto-detect environment and return appropriate API URL
+  static String _getBaseUrl() {
+    // Check if running in production (GitHub Pages)
+    final hostname = html.window.location.hostname!;
+    final isGitHubPages = hostname.contains('github.io');
+    final isLocalhost = hostname == 'localhost' || hostname == '127.0.0.1';
+
+    if (isGitHubPages) {
+      print('[ApiService] 🌍 Production environment detected - using Railway backend');
+      return productionBaseUrl;
+    } else if (isLocalhost) {
+      print('[ApiService] 🏠 Development environment detected - using localhost backend');
+      return defaultBaseUrl;
+    } else {
+      // Fallback for other domains
+      print('[ApiService] ❓ Unknown environment ($hostname) - using localhost backend');
+      return defaultBaseUrl;
+    }
+  }
 
   Map<String, String> _getHeaders(String? token) {
     final headers = {

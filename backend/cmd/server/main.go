@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
 
 	"mini-app-bridge-test/backend/internal/handlers"
 	"mini-app-bridge-test/backend/internal/middleware"
@@ -12,7 +13,28 @@ import (
 )
 
 func main() {
-	gin.SetMode(gin.ReleaseMode)
+	// Environment detection
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	ginMode := os.Getenv("GIN_MODE")
+	if ginMode == "" {
+		ginMode = gin.ReleaseMode
+	}
+	gin.SetMode(ginMode)
+
+	// Log environment info
+	env := os.Getenv("GO_ENV")
+	if env == "" {
+		env = "development"
+	}
+
+	log.Printf("🚀 Starting Mini App Bridge Backend")
+	log.Printf("📍 Environment: %s", env)
+	log.Printf("🌐 Port: %s", port)
+	log.Printf("⚙️ Gin Mode: %s", ginMode)
 
 	r := gin.Default()
 
@@ -46,13 +68,15 @@ func main() {
 
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"status": "healthy",
-			"service": "mini-app-bridge-test backend",
+			"status":      "healthy",
+			"service":     "mini-app-bridge-test backend",
+			"environment": env,
+			"version":     "1.0.0",
 		})
 	})
 
-	log.Println("Starting server on :8080...")
-	log.Println("API Routes:")
+	log.Printf("🚀 Starting server on :%s...", port)
+	log.Println("📋 API Routes:")
 	log.Println("  GET  /api/routes")
 	log.Println("  POST /api/bookings (requires Authorization header)")
 	log.Println("  GET  /api/bookings/:id (requires Authorization header)")
@@ -60,7 +84,7 @@ func main() {
 	log.Println("  POST /webhooks/payment")
 	log.Println("  GET  /health")
 
-	if err := r.Run(":8080"); err != nil {
+	if err := r.Run(":" + port); err != nil {
 		log.Fatal("Failed to start server:", err)
 	}
 }

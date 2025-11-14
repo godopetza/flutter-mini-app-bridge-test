@@ -1,0 +1,173 @@
+name: Deploy Host App to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'host-app/**'
+      - '.github/workflows/deploy-host.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'host-app/**'
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages-host"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: host-app/package-lock.json
+
+    - name: Install dependencies
+      working-directory: host-app
+      run: npm ci
+
+    - name: Create static build directory
+      run: mkdir -p host-app/build
+
+    - name: Copy and configure static files
+      working-directory: host-app
+      run: |
+        # Copy static files
+        cp -r public/* build/
+
+        # Update index.html for production
+        sed -i 's|http://localhost:8081|https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/mini_app/|g' build/index.html
+
+        # Update backend API URL
+        sed -i 's|http://localhost:8080|${{ vars.RAILWAY_BACKEND_URL || 'https://flutter-mini-app-bridge-test-production.up.railway.app' }}|g' build/index.html
+
+        # Update iframe source for production
+        sed -i 's|src="http://localhost:8081"|src="https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/mini_app/"|g' build/index.html
+
+    - name: Add production configuration script
+      working-directory: host-app/build
+      run: |
+        cat >> index.html << 'EOF'
+        <script>
+        // Production environment detection
+        window.isProduction = true;
+        window.config = {
+            flutterAppUrl: 'https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/mini_app/',
+            backendApiUrl: '${{ vars.RAILWAY_BACKEND_URL || 'https://flutter-mini-app-bridge-test-production.up.railway.app' }}',
+            environment: 'production'
+        };
+        console.log('🚀 Host App running in production mode');
+        console.log('📱 Flutter Mini App URL:', window.config.flutterAppUrl);
+        console.log('🔧 Backend API URL:', window.config.backendApiUrl);
+        </script>
+        EOF
+
+    - name: Create docs directory structure
+      run: |
+        mkdir -p docs/host-app
+
+    - name: Copy built files to docs
+      run: |
+        cp -r host-app/build/* docs/host-app/
+
+    - name: Preserve existing docs structure
+      run: |
+        # Create index.html if it doesn't exist (from Flutter workflow)
+        if [ ! -f docs/index.html ]; then
+          cat > docs/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Mini App Bridge Test Project</title>
+            <style>
+                body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+                .app-card { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0; }
+                .btn { display: inline-block; padding: 10px 20px; background: #007cba; color: white; text-decoration: none; border-radius: 5px; }
+                .btn:hover { background: #005a8b; }
+            </style>
+        </head>
+        <body>
+            <h1>🚀 Mini App Bridge Test Project</h1>
+            <p>A production-ready mini app ecosystem for testing JavaScript bridge patterns used in super apps.</p>
+
+            <div class="app-card">
+                <h3>🏦 Host App Integration (Recommended)</h3>
+                <p>Complete host app with PIN validation and bridge communication</p>
+                <a href="host-app/" class="btn">Open Host App</a>
+                <p><small>💡 This demonstrates the full bridge integration with PIN testing</small></p>
+            </div>
+
+            <div class="app-card">
+                <h3>📱 Flutter Mini App (Standalone)</h3>
+                <p>Standalone Flutter web app with mock bridge for testing</p>
+                <a href="mini_app/" class="btn">Open Flutter App</a>
+                <p><small>⚠️ This runs in mock mode without host app integration</small></p>
+            </div>
+
+            <div class="app-card">
+                <h3>🔐 PIN Testing Guide</h3>
+                <ul>
+                    <li><code>0000</code> - ✅ Success (payment completes)</li>
+                    <li><code>1111</code> - ❌ Failed (error message, retry allowed)</li>
+                    <li><code>2222</code> - ⏳ Pending (manual review simulation)</li>
+                    <li>Other PINs - ❓ Invalid (helpful error message)</li>
+                </ul>
+            </div>
+
+            <div class="app-card">
+                <h3>📋 Technical Features</h3>
+                <ul>
+                    <li>✅ Bridge Communication between Host ↔ Flutter</li>
+                    <li>✅ Payment flow with backend verification</li>
+                    <li>✅ React Native integration patterns</li>
+                    <li>✅ Environment-specific configuration</li>
+                    <li>✅ CORS and security best practices</li>
+                </ul>
+            </div>
+
+            <p><strong>Backend API:</strong> <code id="backend-url">Loading...</code></p>
+            <p><strong>Documentation:</strong> <a href="https://github.com/${{ github.repository }}">GitHub Repository</a></p>
+
+            <script>
+                // Try to detect backend URL and status
+                const backendUrl = '${{ vars.RAILWAY_BACKEND_URL || 'https://flutter-mini-app-bridge-test-production.up.railway.app' }}';
+                fetch(backendUrl + '/health')
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('backend-url').textContent = backendUrl + ' (✅ Online)';
+                        document.getElementById('backend-url').style.color = 'green';
+                    })
+                    .catch(() => {
+                        document.getElementById('backend-url').textContent = backendUrl + ' (❌ Offline or not configured)';
+                        document.getElementById('backend-url').style.color = 'red';
+                    });
+            </script>
+        </body>
+        </html>
+        EOF
+        fi
+
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs
+        keep_files: true  # Keep mini_app files
+
+    - name: Output deployment URLs
+      if: github.ref == 'refs/heads/main'
+      run: |
+        echo "🏦 Host app deployed to: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/host-app/"
+        echo "🌐 Project landing page: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/"

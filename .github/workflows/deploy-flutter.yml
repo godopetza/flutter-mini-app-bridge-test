@@ -1,0 +1,132 @@
+name: Deploy Flutter Web to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'mini_app/**'
+      - '.github/workflows/deploy-flutter.yml'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'mini_app/**'
+
+# Allow one concurrent deployment
+concurrency:
+  group: "pages-flutter"
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Setup Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.24.5'
+        channel: 'stable'
+
+    - name: Get dependencies
+      working-directory: mini_app
+      run: flutter pub get
+
+    - name: Build web app
+      working-directory: mini_app
+      run: |
+        flutter build web \
+          --release \
+          --base-href="/mini-app-bridge-test/mini_app/" \
+          --web-renderer=html
+
+    - name: Update API URLs for production
+      working-directory: mini_app/build/web
+      run: |
+        # Update any hardcoded localhost URLs to production Railway URL
+        find . -name "*.js" -type f -exec sed -i 's|http://localhost:8080|${{ vars.RAILWAY_BACKEND_URL || 'https://flutter-mini-app-bridge-test-production.up.railway.app' }}|g' {} \;
+
+    - name: Create docs directory structure
+      run: |
+        mkdir -p docs/mini_app
+
+    - name: Copy built files to docs
+      run: |
+        cp -r mini_app/build/web/* docs/mini_app/
+
+    - name: Create index.html if missing
+      run: |
+        if [ ! -f docs/index.html ]; then
+          cat > docs/index.html << 'EOF'
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Mini App Bridge Test Project</title>
+            <style>
+                body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+                .app-card { border: 1px solid #ddd; border-radius: 8px; padding: 20px; margin: 20px 0; }
+                .btn { display: inline-block; padding: 10px 20px; background: #007cba; color: white; text-decoration: none; border-radius: 5px; }
+                .btn:hover { background: #005a8b; }
+            </style>
+        </head>
+        <body>
+            <h1>🚀 Mini App Bridge Test Project</h1>
+            <p>A production-ready mini app ecosystem for testing JavaScript bridge patterns used in super apps.</p>
+
+            <div class="app-card">
+                <h3>📱 Flutter Mini App (Bus Booking)</h3>
+                <p>Standalone Flutter web app with mock bridge for testing</p>
+                <a href="mini_app/" class="btn">Open Flutter App</a>
+            </div>
+
+            <div class="app-card">
+                <h3>🏦 Host App Integration</h3>
+                <p>Complete host app with PIN validation and bridge communication</p>
+                <a href="host-app/" class="btn">Open Host App</a>
+            </div>
+
+            <div class="app-card">
+                <h3>📋 Features</h3>
+                <ul>
+                    <li>✅ PIN Validation (0000=success, 1111=fail, 2222=pending)</li>
+                    <li>✅ Bridge Communication between apps</li>
+                    <li>✅ Payment flow with backend integration</li>
+                    <li>✅ React Native integration support</li>
+                </ul>
+            </div>
+
+            <p><strong>Backend API:</strong> <code id="backend-url">Loading...</code></p>
+            <p><strong>Documentation:</strong> <a href="https://github.com/${{ github.repository }}">GitHub Repository</a></p>
+
+            <script>
+                // Try to detect backend URL
+                fetch('https://flutter-mini-app-bridge-test-production.up.railway.app/health')
+                    .then(response => response.json())
+                    .then(data => {
+                        document.getElementById('backend-url').textContent = 'https://flutter-mini-app-bridge-test-production.up.railway.app (✅ Online)';
+                    })
+                    .catch(() => {
+                        document.getElementById('backend-url').textContent = 'Backend URL not configured';
+                    });
+            </script>
+        </body>
+        </html>
+        EOF
+        fi
+
+    - name: Deploy to GitHub Pages
+      if: github.ref == 'refs/heads/main'
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs
+        keep_files: true  # Keep host-app files
+
+    - name: Output deployment URL
+      if: github.ref == 'refs/heads/main'
+      run: |
+        echo "🚀 Flutter app deployed to: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/mini_app/"

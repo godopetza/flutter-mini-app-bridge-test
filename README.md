@@ -704,6 +704,97 @@ if (isInIframe) {
 - [Flutter Mini App Guide](mini_app/README.md)
 - [Host App Bridge Guide](host-app/README.md)
 
+## 🚀 Production Deployment
+
+This project is configured for automated deployment with GitHub Actions and Railway.
+
+### 🌐 Live Demo URLs
+
+Once deployed, your project will be available at:
+
+- **🏠 Project Homepage**: `https://godopetza.github.io/mini-app-bridge-test/`
+- **🏦 Host App**: `https://godopetza.github.io/mini-app-bridge-test/host-app/`
+- **📱 Flutter Mini App**: `https://godopetza.github.io/mini-app-bridge-test/mini_app/`
+- **🔧 Backend API**: `https://flutter-mini-app-bridge-test-production.up.railway.app`
+
+### ⚡ Auto-Deployment Setup
+
+**1. Railway Backend Setup:**
+```bash
+# 1. Go to railway.app
+# 2. Create new project from GitHub repo
+# 3. Configure these settings:
+
+Custom Build Command:
+cd backend && go build -o main cmd/server/main.go
+
+Custom Start Command:
+cd backend && ./main
+
+Watch Paths:
+/backend/**
+```
+
+**2. GitHub Pages Setup:**
+```bash
+# 1. Go to repository Settings > Pages
+# 2. Source: Deploy from a branch
+# 3. Branch: gh-pages / (root)
+# 4. GitHub Actions will auto-create this branch
+```
+
+**3. Deploy Process:**
+```bash
+# Simply push to main branch - everything auto-deploys!
+git add .
+git commit -m "Deploy to production"
+git push origin main
+
+# GitHub Actions will:
+# ✅ Build Flutter web app
+# ✅ Build static host app
+# ✅ Deploy both to GitHub Pages
+# ✅ Railway auto-deploys backend
+```
+
+### 🏗️ Manual Build (Optional)
+
+For local testing of production builds:
+
+```bash
+# Backend (Railway)
+cd backend
+go build -o main cmd/server/main.go
+PORT=8080 ./main
+
+# Flutter (GitHub Pages)
+cd mini_app
+flutter build web --release --base-href="/mini-app-bridge-test/mini_app/"
+
+# Host App (GitHub Pages)
+cd host-app
+npm run build:production
+```
+
+### 🔧 Environment Configuration
+
+The project automatically detects and configures for different environments:
+
+| Environment | Backend URL | Flutter Detection | Host App Detection |
+|-------------|-------------|------------------|-------------------|
+| **Development** | `localhost:8080` | `hostname == 'localhost'` | Local Express server |
+| **Production** | Railway URL | `hostname.contains('github.io')` | Static GitHub Pages |
+
+### 🛠️ Environment Variables
+
+**Railway (Backend):**
+- `PORT`: Auto-provided by Railway
+- `GO_ENV`: Set to `production`
+- `GIN_MODE`: Set to `release`
+
+**GitHub Actions (Frontend):**
+- `RAILWAY_BACKEND_URL`: Optional override (defaults to `https://flutter-mini-app-bridge-test-production.up.railway.app`)
+
 ## 🤝 Contributing
 
 This is a learning project. Feel free to:
@@ -713,23 +804,26 @@ This is a learning project. Feel free to:
 - Add new API endpoints
 - Improve error handling
 
-#Setup Commands
+## 💻 Local Development Setup
 
-  Terminal 1: Backend API Server
+**Terminal 1: Backend API Server**
+```bash
+cd backend
+go run cmd/server/main.go
+```
 
-  cd /Users/godopetza/development/mini-app-bridge-test/backend
-  go run cmd/server/main.go
+**Terminal 2: Host App (Node.js)**
+```bash
+cd host-app
+npm install  # if not already done
+npm start
+```
 
-  Terminal 2: Host App (Node.js)
-
-  cd /Users/godopetza/development/mini-app-bridge-test/host-app
-  npm install  # if not already done
-  npm start
-
-  Terminal 3: Flutter Mini App
-
-  cd /Users/godopetza/development/mini-app-bridge-test/mini_app
-  flutter run -d web-server --web-port=8081
+**Terminal 3: Flutter Mini App**
+```bash
+cd mini_app
+flutter run -d web-server --web-port=8081
+```
 
 ## 📄 License
 

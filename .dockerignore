@@ -1,0 +1,24 @@
+# Ignore everything except backend
+*
+!backend/
+
+# But ignore these within backend
+backend/.git
+backend/*.md
+backend/.env
+backend/.env.*
+backend/tmp/
+backend/logs/
+
+# Ignore other project folders
+host-app/
+mini_app/
+.github/
+docs/
+
+# Ignore common files
+.git
+.gitignore
+*.md
+LICENSE
+railway.json
