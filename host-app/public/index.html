@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bank App - Mini App Bridge Test</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px 20px;
+            color: white;
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .header .subtitle {
+            margin: 5px 0 0 0;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        .app-container {
+            flex: 1;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .mini-app-frame {
+            flex: 1;
+            border: none;
+            border-radius: 12px;
+            background: white;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .bridge-info {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            padding: 10px 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-size: 12px;
+            backdrop-filter: blur(10px);
+        }
+
+        .bridge-logs {
+            background: rgba(0, 0, 0, 0.2);
+            color: white;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            max-height: 100px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 16px;
+            }
+            .header .subtitle {
+                font-size: 12px;
+            }
+            .app-container {
+                padding: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🏦 Mock Bank App</h1>
+        <div class="subtitle">Hosting Flutter Mini App via WebView Bridge</div>
+    </div>
+
+    <div class="app-container">
+        <div class="bridge-info">
+            🔗 <strong>Bridge Status:</strong> <span id="bridge-status">Initializing...</span> |
+            👤 <strong>User:</strong> <span id="current-user">Loading...</span>
+        </div>
+
+        <iframe
+            id="mini-app-frame"
+            class="mini-app-frame"
+            src="http://localhost:8081"
+            title="Flutter Mini App">
+        </iframe>
+
+        <div class="bridge-logs" id="bridge-logs">
+Bridge console ready - messages will appear here...
+        </div>
+    </div>
+
+    <script>
+        // Mock Bank App JavaScript Bridge Implementation
+        // This simulates a real bank app's JavaScript bridge for communication with mini apps
+
+        class BankAppBridge {
+            constructor() {
+                this.isReady = false;
+                this.currentUser = null;
+                this.currentPayment = null;
+                this.logElement = document.getElementById('bridge-logs');
+                this.statusElement = document.getElementById('bridge-status');
+                this.userElement = document.getElementById('current-user');
+
+                this.initializeBridge();
+                this.setupMessageListener();
+            }
+
+            // Initialize the bridge with mock user data
+            initializeBridge() {
+                this.log('🚀 Initializing Bank App Bridge...');
+
+                // Simulate loading user data from bank's systems
+                setTimeout(() => {
+                    this.currentUser = {
+                        userId: 'host-app-user-123',
+                        name: 'Ben Minja (FROM HOST)',
+                        email: 'ben.test@email.com',
+                        phone: '+255712345678',
+                        token: 'host-token-abc123',
+                        accountNumber: '1234567890',
+                        dataSource: 'HOST_APP',
+                        bridgeVersion: '1.0.0',
+                        timestamp: new Date().toISOString()
+                    };
+
+                    this.isReady = true;
+                    this.updateStatus('Ready ✅', `${this.currentUser.name} (${this.currentUser.accountNumber})`);
+                    this.log(`✅ Bridge ready for user: ${this.currentUser.name}`);
+
+                    // Expose bridge to global window object (simulating native bridge)
+                    window.BankApp = {
+                        isReady: true,
+                        getUserInfo: () => this.currentUser,
+                        initiatePayment: (data) => this.handlePaymentRequest(data)
+                    };
+
+                }, 1000);
+            }
+
+            // Setup listener for messages from the iframe (Flutter mini app)
+            setupMessageListener() {
+                window.addEventListener('message', (event) => {
+                    // In production, you should verify the origin for security
+                    // if (event.origin !== 'http://localhost:8081') return;
+
+                    this.handleMessage(event.data);
+                });
+            }
+
+            // Handle incoming messages from mini app
+            handleMessage(message) {
+                if (!message || typeof message !== 'object') return;
+
+                this.log(`📨 Received: ${message.type}`);
+
+                switch (message.type) {
+                    case 'READY':
+                        this.handleReadyMessage();
+                        break;
+                    case 'REQUEST_USER_INFO':
+                        this.handleUserInfoRequest();
+                        break;
+                    case 'INITIATE_PAYMENT':
+                        this.handlePaymentRequest(message.data);
+                        break;
+                    case 'BOOKING_SUCCESS':
+                        this.handleBookingSuccess(message.data);
+                        break;
+                    default:
+                        this.log(`❓ Unknown message type: ${message.type}`);
+                }
+            }
+
+            // Handle mini app ready signal
+            handleReadyMessage() {
+                this.log('🎯 Mini app is ready');
+                if (this.isReady && this.currentUser) {
+                    this.sendUserInfo();
+                }
+            }
+
+            // Handle user info request from mini app
+            handleUserInfoRequest() {
+                if (!this.isReady || !this.currentUser) {
+                    this.log('⚠️ User info requested but not ready');
+                    return;
+                }
+
+                this.sendUserInfo();
+            }
+
+            // Send user info to mini app
+            sendUserInfo() {
+                const userMessage = {
+                    type: 'USER_INFO',
+                    data: this.currentUser
+                };
+
+                this.postToMiniApp(userMessage);
+                this.log(`👤 Sent user info: ${this.currentUser.name} [Source: ${this.currentUser.dataSource}]`);
+                this.log(`📋 Full user data: ${JSON.stringify(this.currentUser, null, 2)}`);
+            }
+
+            // Handle payment initiation request from mini app
+            handlePaymentRequest(paymentData) {
+                if (!paymentData) {
+                    this.log('❌ Invalid payment data');
+                    return;
+                }
+
+                const { amount, currency, reference, description } = paymentData;
+                this.log(`💳 Processing payment: ${amount} ${currency} (${reference})`);
+                this.log(`📄 Description: ${description || 'N/A'}`);
+
+                // Store payment data for later use
+                this.currentPayment = { amount, currency, reference, description };
+
+                // Close the iframe and show PIN entry
+                this.closeIframeAndShowPinEntry();
+            }
+
+            // Handle booking success notification from mini app
+            handleBookingSuccess(bookingData) {
+                if (!bookingData) {
+                    this.log('❌ Invalid booking success data');
+                    return;
+                }
+
+                const { bookingId, ticketNumber, transactionId, amount, currency, route } = bookingData;
+                this.log(`🎉 Booking completed successfully!`);
+                this.log(`📋 Booking: ${bookingId}`);
+                this.log(`🎫 Ticket: ${ticketNumber}`);
+                this.log(`💰 Amount: ${amount} ${currency}`);
+                this.log(`🚌 Route: ${route}`);
+
+                // Show a success notification banner
+                this.showSuccessNotification(bookingData);
+
+                // Update status to show booking completion
+                this.updateStatus('Booking Completed 🎉', `${this.currentUser.name} - Last booking: ${bookingId}`);
+
+                // In a real bank app, this could:
+                // - Send push notification
+                // - Update transaction history
+                // - Send confirmation email/SMS
+                // - Navigate to a success screen
+                // - Update loyalty points
+            }
+
+            // Show success notification banner
+            showSuccessNotification(bookingData) {
+                // Create notification element if it doesn't exist
+                let notification = document.getElementById('success-notification');
+                if (!notification) {
+                    notification = document.createElement('div');
+                    notification.id = 'success-notification';
+                    notification.style.cssText = `
+                        position: fixed;
+                        top: 80px;
+                        left: 20px;
+                        right: 20px;
+                        background: linear-gradient(135deg, #4CAF50, #45a049);
+                        color: white;
+                        padding: 20px;
+                        border-radius: 12px;
+                        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+                        z-index: 1000;
+                        text-align: center;
+                        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                        backdrop-filter: blur(10px);
+                        border: 1px solid rgba(255,255,255,0.2);
+                        transform: translateY(-100px);
+                        opacity: 0;
+                        transition: all 0.3s ease;
+                    `;
+                    document.body.appendChild(notification);
+                }
+
+                notification.innerHTML = `
+                    <div style="font-size: 24px; margin-bottom: 10px;">🎉 Booking Successful!</div>
+                    <div style="font-size: 16px; margin-bottom: 8px;">Booking ID: ${bookingData.bookingId}</div>
+                    <div style="font-size: 14px; opacity: 0.9;">Ticket: ${bookingData.ticketNumber}</div>
+                `;
+
+                // Animate in
+                setTimeout(() => {
+                    notification.style.transform = 'translateY(0)';
+                    notification.style.opacity = '1';
+                }, 100);
+
+                // Auto-hide after 5 seconds
+                setTimeout(() => {
+                    notification.style.transform = 'translateY(-100px)';
+                    notification.style.opacity = '0';
+                }, 5000);
+            }
+
+            // Send message to mini app via iframe
+            postToMiniApp(message) {
+                const iframe = document.getElementById('mini-app-frame');
+                if (iframe && iframe.contentWindow) {
+                    iframe.contentWindow.postMessage(message, '*');
+                }
+            }
+
+            // Update status display
+            updateStatus(status, user = null) {
+                this.statusElement.textContent = status;
+                if (user) {
+                    this.userElement.textContent = user;
+                }
+            }
+
+            // Close iframe and show PIN entry
+            closeIframeAndShowPinEntry() {
+                this.log('🔐 Initiating secure payment flow...');
+
+                // Hide iframe
+                const iframe = document.getElementById('mini-app-frame');
+                iframe.style.display = 'none';
+
+                // Update status
+                this.updateStatus('Enter PIN to confirm payment 🔐');
+
+                // Show PIN entry screen
+                this.showPinEntry();
+            }
+
+            // Show PIN entry interface
+            showPinEntry() {
+                const pinContainer = document.createElement('div');
+                pinContainer.id = 'pin-container';
+                pinContainer.style.cssText = `
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    background: rgba(255, 255, 255, 0.95);
+                    backdrop-filter: blur(20px);
+                    padding: 40px 20px;
+                    text-align: center;
+                `;
+
+                pinContainer.innerHTML = `
+                    <div style="background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 400px; width: 100%;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">🔐</div>
+                        <h2 style="margin: 0 0 10px 0; color: #333;">Confirm Payment</h2>
+                        <p style="color: #666; margin-bottom: 20px;">Amount: <strong>${this.currentPayment.currency} ${this.currentPayment.amount.toLocaleString()}</strong></p>
+                        <p style="color: #666; margin-bottom: 30px;">${this.currentPayment.description}</p>
+
+                        <div style="margin-bottom: 30px;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: bold;">Enter your 4-digit PIN:</label>
+                            <input type="password" id="pin-input" maxlength="4"
+                                   style="width: 120px; height: 50px; font-size: 24px; text-align: center; border: 2px solid #ddd; border-radius: 10px; letter-spacing: 8px;"
+                                   placeholder="••••">
+                        </div>
+
+                        <button id="confirm-payment-btn"
+                                style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 15px 40px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%; margin-bottom: 10px;">
+                            Confirm Payment
+                        </button>
+
+                        <button id="cancel-payment-btn"
+                                style="background: #f44336; color: white; border: none; padding: 15px 40px; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; width: 100%;">
+                            Cancel
+                        </button>
+                    </div>
+                `;
+
+                // Replace app container content
+                const appContainer = document.querySelector('.app-container');
+                appContainer.appendChild(pinContainer);
+
+                // Add event listeners
+                const pinInput = document.getElementById('pin-input');
+                const confirmBtn = document.getElementById('confirm-payment-btn');
+                const cancelBtn = document.getElementById('cancel-payment-btn');
+
+                pinInput.focus();
+
+                pinInput.addEventListener('input', () => {
+                    if (pinInput.value.length === 4) {
+                        confirmBtn.style.background = 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)';
+                        confirmBtn.textContent = 'Processing...';
+                    }
+                });
+
+                confirmBtn.addEventListener('click', () => {
+                    if (pinInput.value.length === 4) {
+                        this.processPayment(pinInput.value);
+                    } else {
+                        alert('Please enter a 4-digit PIN');
+                        pinInput.focus();
+                    }
+                });
+
+                cancelBtn.addEventListener('click', () => {
+                    this.cancelPayment();
+                });
+            }
+
+            // Process payment with PIN
+            processPayment(pin) {
+                this.log(`🔐 Processing payment with PIN: ${pin.replace(/./g, '•')}`);
+
+                // Simulate payment processing
+                const confirmBtn = document.getElementById('confirm-payment-btn');
+                confirmBtn.textContent = 'Processing...';
+                confirmBtn.disabled = true;
+
+                setTimeout(() => {
+                    // Simulate successful payment (in real app, validate PIN with backend)
+                    const paymentResult = {
+                        success: true,
+                        transactionId: `TXN-${Date.now()}`,
+                        timestamp: new Date().toISOString(),
+                        amount: this.currentPayment.amount,
+                        currency: this.currentPayment.currency,
+                        reference: this.currentPayment.reference
+                    };
+
+                    this.log(`✅ Payment successful: ${paymentResult.transactionId}`);
+
+                    // Show ticket/success screen
+                    this.showTicketScreen(paymentResult);
+                }, 2000);
+            }
+
+            // Show ticket/success screen
+            showTicketScreen(paymentResult) {
+                const ticketContainer = document.createElement('div');
+                ticketContainer.id = 'ticket-container';
+                ticketContainer.style.cssText = `
+                    flex: 1;
+                    display: flex;
+                    flex-direction: column;
+                    justify-content: center;
+                    align-items: center;
+                    background: rgba(255, 255, 255, 0.95);
+                    backdrop-filter: blur(20px);
+                    padding: 20px;
+                    text-align: center;
+                `;
+
+                const bookingId = `BK-${Date.now()}`;
+                const ticketNumber = `TK-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+                ticketContainer.innerHTML = `
+                    <div style="background: white; padding: 30px; border-radius: 20px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); max-width: 500px; width: 100%;">
+                        <div style="font-size: 64px; margin-bottom: 20px;">🎫</div>
+                        <h1 style="margin: 0 0 10px 0; color: #4CAF50;">Payment Successful!</h1>
+                        <p style="color: #666; margin-bottom: 30px;">Your bus ticket has been booked</p>
+
+                        <div style="background: #f8f9fa; padding: 20px; border-radius: 15px; margin-bottom: 20px; text-align: left;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span style="font-weight: bold;">Booking ID:</span>
+                                <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px;">${bookingId}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span style="font-weight: bold;">Ticket Number:</span>
+                                <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px;">${ticketNumber}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span style="font-weight: bold;">Transaction ID:</span>
+                                <span style="font-family: monospace; background: #e9ecef; padding: 4px 8px; border-radius: 4px;">${paymentResult.transactionId}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span style="font-weight: bold;">Amount Paid:</span>
+                                <span style="color: #4CAF50; font-weight: bold;">${paymentResult.currency} ${paymentResult.amount.toLocaleString()}</span>
+                            </div>
+                            <div style="display: flex; justify-content: space-between;">
+                                <span style="font-weight: bold;">Date & Time:</span>
+                                <span>${new Date().toLocaleString()}</span>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; gap: 10px; justify-content: center;">
+                            <button id="download-ticket-btn"
+                                    style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer;">
+                                📱 Save Ticket
+                            </button>
+
+                            <button id="new-booking-btn"
+                                    style="background: #4CAF50; color: white; border: none; padding: 12px 24px; border-radius: 10px; font-size: 14px; font-weight: bold; cursor: pointer;">
+                                🎫 New Booking
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                // Remove PIN container and add ticket container
+                const pinContainer = document.getElementById('pin-container');
+                if (pinContainer) pinContainer.remove();
+
+                const appContainer = document.querySelector('.app-container');
+                appContainer.appendChild(ticketContainer);
+
+                // Add event listeners
+                document.getElementById('download-ticket-btn').addEventListener('click', () => {
+                    this.log('📱 Ticket saved to device');
+                    alert('Ticket saved! You can find it in your tickets section.');
+                });
+
+                document.getElementById('new-booking-btn').addEventListener('click', () => {
+                    this.resetToMiniApp();
+                });
+
+                // Update status
+                this.updateStatus('Payment Completed ✅', `${this.currentUser.name} - Last booking: ${bookingId}`);
+            }
+
+            // Cancel payment and return to mini app
+            cancelPayment() {
+                this.log('❌ Payment cancelled by user');
+                this.resetToMiniApp();
+            }
+
+            // Reset back to mini app
+            resetToMiniApp() {
+                // Remove any overlays
+                const pinContainer = document.getElementById('pin-container');
+                const ticketContainer = document.getElementById('ticket-container');
+                if (pinContainer) pinContainer.remove();
+                if (ticketContainer) ticketContainer.remove();
+
+                // Show iframe again
+                const iframe = document.getElementById('mini-app-frame');
+                iframe.style.display = 'block';
+
+                // Reset status
+                this.updateStatus('Ready ✅', `${this.currentUser.name} (${this.currentUser.accountNumber})`);
+
+                this.log('🔄 Returned to mini app');
+            }
+
+            // Add log message to console display
+            log(message) {
+                const timestamp = new Date().toLocaleTimeString();
+                const logMessage = `[${timestamp}] ${message}\n`;
+                this.logElement.textContent += logMessage;
+                this.logElement.scrollTop = this.logElement.scrollHeight;
+
+                // Also log to browser console for debugging
+                console.log(`[BankAppBridge] ${message}`);
+            }
+        }
+
+        // Initialize the bridge when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new BankAppBridge();
+        });
+    </script>
+</body>
+</html>
