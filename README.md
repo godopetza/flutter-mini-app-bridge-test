@@ -5,6 +5,7 @@ A production-ready mini app ecosystem test environment for learning and testing 
 ## 🏗️ Architecture Overview
 
 ### Current Implementation (Web Host)
+
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                    Complete Test Environment                        │
@@ -37,6 +38,7 @@ A production-ready mini app ecosystem test environment for learning and testing 
 ```
 
 ### React Native Alternative
+
 ```
 ┌─────────────────────────────────────────────────────────────────────┐
 │                     React Native Integration                       │
@@ -91,6 +93,7 @@ A production-ready mini app ecosystem test environment for learning and testing 
 This mini app bridge system supports multiple host platform integrations:
 
 ### Current Implementation
+
 - **Node.js Host App**: Express server with iframe-based Flutter integration
 - **Flutter Web Mini App**: Runs in browser iframe with PostMessage communication
 
@@ -100,14 +103,15 @@ The Flutter mini app can also be integrated with React Native apps using WebView
 
 #### Architecture Comparison
 
-| Platform | Host Technology | WebView Component | Communication Method |
-|----------|----------------|-------------------|---------------------|
-| **Current** | Node.js + Express | Browser iframe | `window.postMessage()` |
-| **React Native** | React Native App | `react-native-webview` | `ReactNativeWebView.postMessage()` |
+| Platform         | Host Technology   | WebView Component      | Communication Method               |
+| ---------------- | ----------------- | ---------------------- | ---------------------------------- |
+| **Current**      | Node.js + Express | Browser iframe         | `window.postMessage()`             |
+| **React Native** | React Native App  | `react-native-webview` | `ReactNativeWebView.postMessage()` |
 
 #### React Native Setup
 
 **1. Install WebView Package**
+
 ```bash
 npm install react-native-webview
 # For iOS
@@ -115,27 +119,28 @@ cd ios && pod install
 ```
 
 **2. React Native Host Component**
+
 ```jsx
-import React, { useRef } from 'react';
-import { WebView } from 'react-native-webview';
+import React, { useRef } from "react";
+import { WebView } from "react-native-webview";
 
 const FlutterMiniApp = () => {
   const webViewRef = useRef(null);
 
   const sendUserInfo = () => {
     const userInfo = {
-      type: 'USER_INFO',
+      type: "USER_INFO",
       data: {
-        userId: 'rn-user-123',
-        name: 'Ben Minja (FROM RN)',
-        email: 'ben.rn@email.com',
-        phone: '+255712345678',
-        token: 'rn-token-abc123',
-        accountNumber: '5555666677778888',
-        dataSource: 'REACT_NATIVE',
-        bridgeVersion: '1.0.0',
-        timestamp: new Date().toISOString()
-      }
+        userId: "rn-user-123",
+        name: "Ben Minja (FROM RN)",
+        email: "ben.rn@email.com",
+        phone: "+255712345678",
+        token: "rn-token-abc123",
+        accountNumber: "5555666677778888",
+        dataSource: "REACT_NATIVE",
+        bridgeVersion: "1.0.0",
+        timestamp: new Date().toISOString(),
+      },
     };
 
     webViewRef.current.postMessage(JSON.stringify(userInfo));
@@ -145,10 +150,10 @@ const FlutterMiniApp = () => {
     const message = JSON.parse(event.nativeEvent.data);
 
     switch (message.type) {
-      case 'READY':
+      case "READY":
         sendUserInfo();
         break;
-      case 'INITIATE_PAYMENT':
+      case "INITIATE_PAYMENT":
         handlePaymentRequest(message.data);
         break;
     }
@@ -157,7 +162,7 @@ const FlutterMiniApp = () => {
   return (
     <WebView
       ref={webViewRef}
-      source={{ uri: 'http://localhost:8081' }}
+      source={{ uri: "http://localhost:8081" }}
       onMessage={handleMessage}
       javaScriptEnabled={true}
       domStorageEnabled={true}
@@ -209,6 +214,7 @@ BankBridge createBridge() {
 #### Message Flow Comparison
 
 **Web Host (Current)**:
+
 ```
 Host App → iframe.contentWindow.postMessage()
 Flutter ← window.addEventListener('message')
@@ -217,6 +223,7 @@ Host App ← window.addEventListener('message')
 ```
 
 **React Native Host**:
+
 ```
 React Native → webViewRef.postMessage()
 Flutter ← window.addEventListener('message')
@@ -244,24 +251,28 @@ React Native ← onMessage prop
 ### Development Setup
 
 1. **Clone and Setup**
+
    ```bash
    git clone <your-repo>
    cd mini-app-bridge-test
    ```
 
 2. **Start Backend API** (Terminal 1)
+
    ```bash
    cd backend
    go run cmd/server/main.go
    ```
 
 3. **Start Flutter Mini App** (Terminal 2)
+
    ```bash
    cd mini_app
    flutter run -d chrome --web-port 8081
    ```
 
 4. **Start Host App** (Terminal 3)
+
    ```bash
    cd host-app
    npm install
@@ -276,7 +287,9 @@ React Native ← onMessage prop
 ## 🧪 Testing Workflows
 
 ### Phase 1: Backend Only Testing
+
 Test the API endpoints independently:
+
 ```bash
 cd backend
 go run cmd/server/main.go
@@ -292,19 +305,24 @@ curl -H "Authorization: Bearer test-token" \
 ```
 
 ### Phase 2: Flutter with Mock Bridge
+
 Test the mini app without host dependency:
+
 ```bash
 cd mini_app
 flutter run -d chrome --web-port 8081
 ```
 
 The app automatically uses `MockBridge` in debug mode:
+
 - Provides fake user data immediately
 - Simulates 3-second payment delay
 - Always returns successful payment results
 
 ### Phase 3: Full Integration Testing
+
 Test complete bridge communication:
+
 ```bash
 # Ensure all three components are running:
 # 1. Backend (port 8080)
@@ -315,6 +333,7 @@ Test complete bridge communication:
 ```
 
 Expected flow:
+
 1. Host app loads with bank branding and bridge status
 2. Flutter mini app loads in iframe with connection verification
 3. Bridge initializes and exchanges user info (auto-fill passenger details)
@@ -381,11 +400,13 @@ mini-app-bridge-test/
 ## 🔗 API Endpoints
 
 ### Public Endpoints
+
 - `GET /api/routes` - List available bus routes
 - `GET /health` - Backend health check
 - `POST /webhooks/payment` - Payment webhook (simulated)
 
 ### Protected Endpoints (Require Authorization header)
+
 - `POST /api/bookings` - Create new booking
 - `GET /api/bookings/:id` - Get booking details
 - `POST /api/bookings/:id/confirm` - Confirm payment
@@ -406,6 +427,7 @@ config := cors.Config{
 ```
 
 **Security Note**: In production, replace `AllowOrigins: ["*"]` with specific domains:
+
 ```go
 AllowOrigins: []string{
     "https://yourdomain.com",
@@ -414,6 +436,7 @@ AllowOrigins: []string{
 ```
 
 **Supported Origins** (Development):
+
 - Host App: `http://localhost:3000`
 - Flutter App: `http://localhost:8081`
 - Backend API: `http://localhost:8080`
@@ -423,35 +446,36 @@ AllowOrigins: []string{
 
 ### Communication Methods Comparison
 
-| Platform | Host → Mini App | Mini App → Host | Environment Detection |
-|----------|----------------|----------------|---------------------|
-| **Node.js Host** | `iframe.contentWindow.postMessage()` | `window.parent.postMessage()` | `window.parent != window` |
-| **React Native** | `webViewRef.postMessage()` | `ReactNativeWebView.postMessage()` | `ReactNativeWebView` exists |
-| **Standalone** | N/A (Mock Bridge) | N/A (Mock Bridge) | No parent window |
+| Platform         | Host → Mini App                      | Mini App → Host                    | Environment Detection       |
+| ---------------- | ------------------------------------ | ---------------------------------- | --------------------------- |
+| **Node.js Host** | `iframe.contentWindow.postMessage()` | `window.parent.postMessage()`      | `window.parent != window`   |
+| **React Native** | `webViewRef.postMessage()`           | `ReactNativeWebView.postMessage()` | `ReactNativeWebView` exists |
+| **Standalone**   | N/A (Mock Bridge)                    | N/A (Mock Bridge)                  | No parent window            |
 
 ### Bridge Implementation Matrix
 
-| Feature | Web Bridge | React Native Bridge | Mock Bridge |
-|---------|-----------|-------------------|-------------|
-| **User Data** | From host app | From React Native app | Hardcoded mock |
-| **Payment Processing** | Host app PIN flow | RN native payment | 3s simulation |
-| **Backend Integration** | ✅ Full API calls | ✅ Full API calls | ❌ Mock responses |
-| **Ticket Display** | ✅ Real tickets | ✅ Real tickets | ✅ Mock tickets |
-| **Error Handling** | ✅ Real errors | ✅ Real errors | ✅ Simulated errors |
+| Feature                 | Web Bridge        | React Native Bridge   | Mock Bridge         |
+| ----------------------- | ----------------- | --------------------- | ------------------- |
+| **User Data**           | From host app     | From React Native app | Hardcoded mock      |
+| **Payment Processing**  | Host app PIN flow | RN native payment     | 3s simulation       |
+| **Backend Integration** | ✅ Full API calls | ✅ Full API calls     | ❌ Mock responses   |
+| **Ticket Display**      | ✅ Real tickets   | ✅ Real tickets       | ✅ Mock tickets     |
+| **Error Handling**      | ✅ Real errors    | ✅ Real errors        | ✅ Simulated errors |
 
 ### Message Types Supported
 
-| Message Type | Direction | Web | React Native | Mock | Purpose |
-|-------------|-----------|-----|-------------|------|---------|
-| `READY` | Mini → Host | ✅ | ✅ | ✅ | Mini app initialization complete |
-| `REQUEST_USER_INFO` | Mini → Host | ✅ | ✅ | ❌ | Request user data from host |
-| `USER_INFO` | Host → Mini | ✅ | ✅ | ✅ | Send user data to mini app |
-| `INITIATE_PAYMENT` | Mini → Host | ✅ | ✅ | ❌ | Start payment process |
-| `PAYMENT_RESULT` | Host → Mini | ✅ | ✅ | ✅ | Payment completion result |
-| `TICKET_ISSUED` | Host → Mini | ✅ | ✅ | ✅ | Final ticket data |
-| `BOOKING_SUCCESS` | Mini → Host | ✅ | ✅ | ❌ | Booking completion notification |
+| Message Type        | Direction   | Web | React Native | Mock | Purpose                          |
+| ------------------- | ----------- | --- | ------------ | ---- | -------------------------------- |
+| `READY`             | Mini → Host | ✅  | ✅           | ✅   | Mini app initialization complete |
+| `REQUEST_USER_INFO` | Mini → Host | ✅  | ✅           | ❌   | Request user data from host      |
+| `USER_INFO`         | Host → Mini | ✅  | ✅           | ✅   | Send user data to mini app       |
+| `INITIATE_PAYMENT`  | Mini → Host | ✅  | ✅           | ❌   | Start payment process            |
+| `PAYMENT_RESULT`    | Host → Mini | ✅  | ✅           | ✅   | Payment completion result        |
+| `TICKET_ISSUED`     | Host → Mini | ✅  | ✅           | ✅   | Final ticket data                |
+| `BOOKING_SUCCESS`   | Mini → Host | ✅  | ✅           | ❌   | Booking completion notification  |
 
 ### 1. Initialization & User Exchange
+
 ```javascript
 // Mini App → Host: Ready signal
 { type: 'READY' }
@@ -474,6 +498,7 @@ AllowOrigins: []string{
 ```
 
 ### 2. Secure Payment Flow
+
 ```javascript
 // Mini App → Host: Payment request with booking ID
 {
@@ -512,6 +537,7 @@ AllowOrigins: []string{
 ```
 
 ### 3. Security Features
+
 - **Token Validation**: Backend validates host app tokens
 - **Amount Verification**: Payment amounts verified against booking
 - **Booking Status**: Prevents double confirmation of payments
@@ -524,16 +550,17 @@ The host app includes a comprehensive PIN validation system for testing differen
 
 ### PIN Test Cases
 
-| PIN Code | Status | Behavior | Use Case |
-|----------|--------|----------|----------|
-| `0000` | ✅ **Success** | Payment processes normally → Backend confirmation → Ticket issued | Happy path testing |
-| `1111` | ❌ **Failed** | Shows error message → Clears input → Allows retry → No backend call | Error handling testing |
-| `2222` | ⏳ **Pending** | Shows pending status → 3s manual review → 70% approval rate | Async payment testing |
-| Others | ❓ **Invalid** | Shows helpful error with valid PIN examples → Allows retry | Input validation testing |
+| PIN Code | Status         | Behavior                                                            | Use Case                 |
+| -------- | -------------- | ------------------------------------------------------------------- | ------------------------ |
+| `0000`   | ✅ **Success** | Payment processes normally → Backend confirmation → Ticket issued   | Happy path testing       |
+| `1111`   | ❌ **Failed**  | Shows error message → Clears input → Allows retry → No backend call | Error handling testing   |
+| `2222`   | ⏳ **Pending** | Shows pending status → 3s manual review → 70% approval rate         | Async payment testing    |
+| Others   | ❓ **Invalid** | Shows helpful error with valid PIN examples → Allows retry          | Input validation testing |
 
 ### Payment Flow by PIN
 
 #### Success Flow (PIN: 0000)
+
 ```
 1. User enters 0000
 2. ✅ PIN validation passes
@@ -545,6 +572,7 @@ The host app includes a comprehensive PIN validation system for testing differen
 ```
 
 #### Failed Flow (PIN: 1111)
+
 ```
 1. User enters 1111
 2. ❌ PIN validation fails
@@ -555,6 +583,7 @@ The host app includes a comprehensive PIN validation system for testing differen
 ```
 
 #### Pending Flow (PIN: 2222)
+
 ```
 1. User enters 2222
 2. ⏳ Triggers pending status
@@ -565,6 +594,7 @@ The host app includes a comprehensive PIN validation system for testing differen
 ```
 
 #### Invalid Flow (Other PINs)
+
 ```
 1. User enters any other 4-digit PIN
 2. ❓ Shows helpful error message
@@ -579,6 +609,7 @@ To test the complete payment validation system:
 1. **Start all three services** (Backend, Host App, Flutter)
 2. **Navigate to payment flow** in host app (http://localhost:3000)
 3. **Test each PIN scenario**:
+
    ```bash
    # Success scenario
    Enter PIN: 0000
@@ -639,16 +670,19 @@ For full production deployment:
 ### Common Issues
 
 1. **Flutter app not loading in iframe**
+
    - Ensure Flutter is running on port 8081
    - Check browser console for CORS errors
    - Verify iframe src URL in host-app/public/index.html
 
 2. **Bridge communication failing**
+
    - Check browser console for postMessage errors
    - Ensure `window.BankApp` is available before bridge init
    - Verify message event listeners are properly set up
 
 3. **API calls failing**
+
    - Confirm backend is running on port 8080
    - Check CORS configuration in middleware
    - Verify Authorization header format
@@ -661,6 +695,7 @@ For full production deployment:
 ### Debug Mode
 
 The mini app intelligently detects environment:
+
 ```dart
 // Automatically uses real bridge when in iframe (host app)
 final isInIframe = html.window.parent != html.window;
@@ -674,6 +709,7 @@ if (isInIframe) {
 ## 🎯 Key Implementation Highlights
 
 ### 🔐 Secure Payment Verification Flow
+
 1. **Flutter** creates pending booking with backend
 2. **Host app** processes PIN entry and calls backend confirmation API
 3. **Backend** verifies payment amount and updates booking status
@@ -681,17 +717,20 @@ if (isInIframe) {
 5. **Flutter** displays ticket via bridge message
 
 ### 📱 Smart Environment Detection
+
 - **Standalone mode**: Uses mock data, blocks payments with clear messaging
 - **Host app mode**: Connects to real bridge, enables full payment flow
 - **Visual indicators**: Green/blue cards show connection status
 
 ### 🎫 Complete Ticket Experience
+
 - Beautiful Material Design 3 ticket display
 - QR code placeholder for conductor verification
 - Complete booking and payment details
 - Save/share functionality with return navigation
 
 ### 🛡️ Production Security Patterns
+
 - Token source validation (host-token vs mock-token)
 - Payment amount verification against booking
 - Comprehensive audit logging
@@ -712,14 +751,15 @@ This project is configured for automated deployment with GitHub Actions and Rail
 
 Once deployed, your project will be available at:
 
-- **🏠 Project Homepage**: `https://godopetza.github.io/mini-app-bridge-test/`
-- **🏦 Host App**: `https://godopetza.github.io/mini-app-bridge-test/host-app/`
-- **📱 Flutter Mini App**: `https://godopetza.github.io/mini-app-bridge-test/mini_app/`
+- **🏠 Project Homepage**: `https://godopetza.github.io/flutter-mini-app-bridge-test/`
+- **🏦 Host App**: `https://godopetza.github.io/flutter-mini-app-bridge-test/host-app/`
+- **📱 Flutter Mini App**: `https://godopetza.github.io/flutter-mini-app-bridge-test/mini_app/`
 - **🔧 Backend API**: `https://flutter-mini-app-bridge-test-production.up.railway.app`
 
 ### ⚡ Auto-Deployment Setup
 
 **1. Railway Backend Setup:**
+
 ```bash
 # 1. Go to railway.app
 # 2. Create new project from GitHub repo
@@ -736,6 +776,7 @@ Watch Paths:
 ```
 
 **2. GitHub Pages Setup:**
+
 ```bash
 # 1. Go to repository Settings > Pages
 # 2. Source: Deploy from a branch
@@ -744,6 +785,7 @@ Watch Paths:
 ```
 
 **3. Deploy Process:**
+
 ```bash
 # Simply push to main branch - everything auto-deploys!
 git add .
@@ -780,24 +822,27 @@ npm run build:production
 
 The project automatically detects and configures for different environments:
 
-| Environment | Backend URL | Flutter Detection | Host App Detection |
-|-------------|-------------|------------------|-------------------|
-| **Development** | `localhost:8080` | `hostname == 'localhost'` | Local Express server |
-| **Production** | Railway URL | `hostname.contains('github.io')` | Static GitHub Pages |
+| Environment     | Backend URL      | Flutter Detection                | Host App Detection   |
+| --------------- | ---------------- | -------------------------------- | -------------------- |
+| **Development** | `localhost:8080` | `hostname == 'localhost'`        | Local Express server |
+| **Production**  | Railway URL      | `hostname.contains('github.io')` | Static GitHub Pages  |
 
 ### 🛠️ Environment Variables
 
 **Railway (Backend):**
+
 - `PORT`: Auto-provided by Railway
 - `GO_ENV`: Set to `production`
 - `GIN_MODE`: Set to `release`
 
 **GitHub Actions (Frontend):**
+
 - `RAILWAY_BACKEND_URL`: Optional override (defaults to `https://flutter-mini-app-bridge-test-production.up.railway.app`)
 
 ## 🤝 Contributing
 
 This is a learning project. Feel free to:
+
 - Add new mini app features
 - Enhance bridge communication patterns
 - Implement additional payment methods
@@ -807,12 +852,14 @@ This is a learning project. Feel free to:
 ## 💻 Local Development Setup
 
 **Terminal 1: Backend API Server**
+
 ```bash
 cd backend
 go run cmd/server/main.go
 ```
 
 **Terminal 2: Host App (Node.js)**
+
 ```bash
 cd host-app
 npm install  # if not already done
@@ -820,6 +867,7 @@ npm start
 ```
 
 **Terminal 3: Flutter Mini App**
+
 ```bash
 cd mini_app
 flutter run -d web-server --web-port=8081
