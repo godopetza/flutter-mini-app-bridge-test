@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -77,15 +78,18 @@
             .header h1 {
                 font-size: 16px;
             }
+
             .header .subtitle {
                 font-size: 12px;
             }
+
             .app-container {
                 padding: 5px;
             }
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <h1>🏦 Mock Bank App</h1>
@@ -98,15 +102,11 @@
             👤 <strong>User:</strong> <span id="current-user">Loading...</span>
         </div>
 
-        <iframe
-            id="mini-app-frame"
-            class="mini-app-frame"
-            src="http://localhost:8081"
-            title="Flutter Mini App">
+        <iframe id="mini-app-frame" class="mini-app-frame" src="http://localhost:8081" title="Flutter Mini App">
         </iframe>
 
         <div class="bridge-logs" id="bridge-logs">
-Bridge console ready - messages will appear here...
+            Bridge console ready - messages will appear here...
         </div>
     </div>
 
@@ -849,4 +849,5 @@ Bridge console ready - messages will appear here...
         });
     </script>
 </body>
+
 </html>

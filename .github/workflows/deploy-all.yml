@@ -151,7 +151,7 @@ jobs:
                       <h3>🏦 Host App Integration (Recommended)</h3>
                       <p>Complete host app with PIN validation and bridge communication</p>
                       <a href="host-app/" class="btn">Open Host App</a>
-                      <a href="https://github.com/godopetza/mini-app-bridge-test" class="btn secondary">View Source</a>
+                      <a href="https://github.com/godopetza/flutter-mini-app-bridge-test" class="btn secondary">View Source</a>
                       <p><small>💡 This demonstrates the full bridge integration with PIN testing</small></p>
                   </div>
 
