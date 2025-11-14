@@ -531,6 +531,8 @@ Bridge console ready - messages will appear here...
                     this.log(`✅ Payment confirmed with backend`);
                     this.log(`📋 Booking data: ${JSON.stringify(confirmResponse.booking, null, 2)}`);
                     this.sendTicketToFlutter(confirmResponse.booking);
+                    // Return the booking so it can be used by the caller
+                    return confirmResponse.booking;
                 } else {
                     throw new Error(confirmResponse.error || 'Backend confirmation failed');
                 }
@@ -571,11 +573,11 @@ Bridge console ready - messages will appear here...
                     const transactionId = `TXN-${Date.now()}`;
                     this.log(`💳 Local payment processed: ${transactionId}`);
 
-                    // Step 3: Proceed with payment confirmation using the new method
-                    await this.proceedWithPaymentConfirmation(transactionId);
+                    // Step 3: Proceed with payment confirmation and get the booking data
+                    const booking = await this.proceedWithPaymentConfirmation(transactionId);
 
-                    // Show host app success screen (moved here to be consistent)
-                    this.showTicketScreen();
+                    // Step 4: Show host app success screen with booking data
+                    this.showTicketScreen(booking);
                 } catch (error) {
                     this.log(`❌ Payment failed: ${error.message}`);
                     this.showPaymentError(error.message);
