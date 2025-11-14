@@ -525,9 +525,11 @@ Bridge console ready - messages will appear here...
                 this.log(`🔄 Confirming payment with backend...`);
 
                 const confirmResponse = await this.confirmPaymentWithBackend(transactionId);
+                this.log(`🔍 Confirm response: ${JSON.stringify(confirmResponse, null, 2)}`);
 
                 if (confirmResponse.success) {
                     this.log(`✅ Payment confirmed with backend`);
+                    this.log(`📋 Booking data: ${JSON.stringify(confirmResponse.booking, null, 2)}`);
                     this.sendTicketToFlutter(confirmResponse.booking);
                 } else {
                     throw new Error(confirmResponse.error || 'Backend confirmation failed');
@@ -621,8 +623,18 @@ Bridge console ready - messages will appear here...
                             return { success: false, error: errorMessage };
                         }
 
-                        const booking = await response.json();
-                        this.log(`✅ Backend confirmation successful on attempt ${attempt + 1}`);
+                        const responseText = await response.text();
+                        this.log(`📄 Raw response: ${responseText}`);
+
+                        let booking;
+                        try {
+                            booking = JSON.parse(responseText);
+                            this.log(`✅ Backend confirmation successful on attempt ${attempt + 1}`);
+                        } catch (parseError) {
+                            this.log(`❌ JSON parse error: ${parseError.message}`);
+                            return { success: false, error: `Invalid JSON response: ${parseError.message}` };
+                        }
+
                         return { success: true, booking };
 
                     } catch (error) {
@@ -641,6 +653,13 @@ Bridge console ready - messages will appear here...
 
             // Send ticket data to Flutter via bridge
             sendTicketToFlutter(booking) {
+                this.log(`🎫 sendTicketToFlutter called with booking: ${JSON.stringify(booking, null, 2)}`);
+
+                if (!booking) {
+                    this.log(`❌ ERROR: booking parameter is undefined!`);
+                    throw new Error('Booking data is undefined');
+                }
+
                 const ticketMessage = {
                     type: 'TICKET_ISSUED',
                     data: {
