@@ -63,9 +63,9 @@ jobs:
         cp -r public/* build/
 
         # Update URLs for production
-        sed -i 's|http://localhost:8081|https://godopetza.github.io/mini-app-bridge-test/mini_app/|g' build/index.html
+        sed -i 's|http://localhost:8081|https://flutterai.dev/mini-app-bridge-test/mini_app/|g' build/index.html
         sed -i 's|http://localhost:8080|https://flutter-mini-app-bridge-test-production.up.railway.app|g' build/index.html
-        sed -i 's|src="http://localhost:8081"|src="https://godopetza.github.io/mini-app-bridge-test/mini_app/"|g' build/index.html
+        sed -i 's|src="http://localhost:8081"|src="https://flutterai.dev/mini-app-bridge-test/mini_app/"|g' build/index.html
 
     # Create combined deployment structure
     - name: Create deployment structure
@@ -79,6 +79,10 @@ jobs:
 
         # Copy Host App build
         cp -r host-app/build/* docs/host-app/
+
+        # Add GitHub Pages configuration files
+        echo "flutterai.dev" > docs/CNAME
+        touch docs/.nojekyll
 
         # Create main landing page
         cat > docs/index.html << 'EOF'
@@ -150,7 +154,7 @@ jobs:
                 <div class="app-card">
                     <h3>🏦 Host App Integration (Recommended)</h3>
                     <p>Complete host app with PIN validation and bridge communication</p>
-                    <a href="host-app/" class="btn">Open Host App</a>
+                    <a href="https://flutterai.dev/mini-app-bridge-test/host-app/" class="btn">Open Host App</a>
                     <a href="https://github.com/godopetza/mini-app-bridge-test" class="btn secondary">View Source</a>
                     <p><small>💡 This demonstrates the full bridge integration with PIN testing</small></p>
                 </div>
@@ -158,7 +162,7 @@ jobs:
                 <div class="app-card">
                     <h3>📱 Flutter Mini App (Standalone)</h3>
                     <p>Standalone Flutter web app with mock bridge for testing</p>
-                    <a href="mini_app/" class="btn">Open Flutter App</a>
+                    <a href="https://flutterai.dev/mini-app-bridge-test/mini_app/" class="btn">Open Flutter App</a>
                     <p><small>⚠️ This runs in mock mode without host app integration</small></p>
                 </div>
 
@@ -223,6 +227,11 @@ jobs:
                         document.getElementById('backend-status').textContent = '❌ Offline';
                         document.getElementById('backend-status').className = 'status offline';
                     });
+
+                // Update links to use custom domain
+                document.querySelectorAll('a[href*="godopetza.github.io"]').forEach(link => {
+                    link.href = link.href.replace('https://godopetza.github.io/mini-app-bridge-test/', 'https://flutterai.dev/mini-app-bridge-test/');
+                });
             </script>
         </body>
         </html>
@@ -243,7 +252,7 @@ jobs:
     - name: Output deployment URLs
       run: |
         echo "🌐 Deployment completed successfully!"
-        echo "🏠 Homepage: https://godopetza.github.io/mini-app-bridge-test/"
-        echo "🏦 Host App: https://godopetza.github.io/mini-app-bridge-test/host-app/"
-        echo "📱 Flutter App: https://godopetza.github.io/mini-app-bridge-test/mini_app/"
+        echo "🏠 Homepage: https://flutterai.dev/mini-app-bridge-test/"
+        echo "🏦 Host App: https://flutterai.dev/mini-app-bridge-test/host-app/"
+        echo "📱 Flutter App: https://flutterai.dev/mini-app-bridge-test/mini_app/"
         echo "🔧 Backend: https://flutter-mini-app-bridge-test-production.up.railway.app"
