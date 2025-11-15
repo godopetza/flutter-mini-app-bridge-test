@@ -20,16 +20,38 @@ Host App Components:
 │   └── index.html             # Main page with bridge implementation
 ├── package.json               # Node.js dependencies
 └── README.md                 # This documentation
+```
 
-Bridge Communication Flow:
-┌─────────────────┐    postMessage    ┌─────────────────┐
-│   Host App      │ ←──────────────→  │  Flutter Mini   │
-│   (Bank UI)     │                   │  App (iframe)   │
-│                 │                   │                 │
-│ • User Session  │  USER_INFO        │ • Route Booking │
-│ • Payment UI    │  PAYMENT_RESULT   │ • Payment Flow  │
-│ • Account Data  │                   │ • UI Components │
-└─────────────────┘                   └─────────────────┘
+### Bridge Communication Flow
+
+```mermaid
+flowchart LR
+    subgraph HOST["🏦 Host App"]
+        direction TB
+        SESSION["👤 User Session"]
+        PAYMENT["💳 Payment UI"]
+        ACCOUNT["🏦 Account Data"]
+    end
+
+    subgraph MINI["📱 Flutter Mini App"]
+        direction TB
+        BOOKING["🎫 Route Booking"]
+        FLOW["💰 Payment Flow"]
+        UI["🖼️ UI Components"]
+    end
+
+    HOST <-->|"postMessage"| MINI
+    HOST -.->|"USER_INFO"| MINI
+    HOST -.->|"PAYMENT_RESULT"| MINI
+
+    style HOST fill:#e8f4f8,stroke:#1565c0,stroke-width:3px,color:#000
+    style MINI fill:#f8e8f4,stroke:#7b1fa2,stroke-width:3px,color:#000
+    style SESSION fill:#fff,stroke:#333,stroke-width:2px,color:#000
+    style PAYMENT fill:#fff,stroke:#333,stroke-width:2px,color:#000
+    style ACCOUNT fill:#fff,stroke:#333,stroke-width:2px,color:#000
+    style BOOKING fill:#fff,stroke:#333,stroke-width:2px,color:#000
+    style FLOW fill:#fff,stroke:#333,stroke-width:2px,color:#000
+    style UI fill:#fff,stroke:#333,stroke-width:2px,color:#000
 ```
 
 ## 📋 Prerequisites

@@ -11,54 +11,55 @@ A production-ready mini app ecosystem test environment for learning and testing 
 ### Current Implementation (Web Host)
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph ENV ["🌐 Complete Test Environment"]
         subgraph BROWSER ["Browser"]
-            subgraph HOST ["🏦 Host App (Bank Simulation)"]
-                subgraph FLUTTER ["📱 Flutter Mini App (Bus Booking)"]
-                    BRIDGE["🔗 JavaScript Bridge<br/>• User Info Exchange<br/>• PIN Validation (0000/1111/2222)<br/>• Payment Initiation<br/>• Ticket Delivery"]
+            subgraph HOST ["🏦 Host App"]
+                subgraph FLUTTER ["📱 Flutter Mini App"]
+                    BRIDGE["🔗 JavaScript Bridge<br/>• User Info Exchange<br/>• PIN Validation<br/>• Payment Initiation<br/>• Ticket Delivery"]
                 end
             end
         end
 
-        BACKEND["🚀 Go Backend API Server<br/>• Bus routes management<br/>• Booking creation & confirmation<br/>• Payment processing & validation<br/>• In-memory storage"]
+        BACKEND["🚀 Go Backend API Server<br/>• Routes & bookings<br/>• Payment processing<br/>• In-memory storage"]
     end
 
-    HOST -->|HTTP API + CORS| BACKEND
-    BRIDGE -.->|PostMessage API| HOST
+    HOST -->|"HTTP API"| BACKEND
+    BRIDGE -.->|"PostMessage"| HOST
 
-    style ENV fill:#f9f9f9,stroke:#333,stroke-width:2px
-    style HOST fill:#e1f5fe,stroke:#01579b,stroke-width:2px
-    style FLUTTER fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
-    style BRIDGE fill:#fff3e0,stroke:#e65100,stroke-width:2px
-    style BACKEND fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    style ENV fill:#f8f9fa,stroke:#000,stroke-width:2px,color:#000
+    style BROWSER fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
+    style HOST fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px,color:#000
+    style FLUTTER fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#000
+    style BRIDGE fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#000
+    style BACKEND fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#000
 ```
 
 ### React Native Alternative
 
 ```mermaid
-graph TB
+flowchart TB
     subgraph MOBILE ["📱 Mobile Device"]
         subgraph RN_HOST ["🏦 React Native Host App"]
             subgraph WEBVIEW ["🌐 WebView Container"]
                 subgraph RN_FLUTTER ["📱 Flutter Web Mini App"]
-                    RN_BRIDGE["🔗 React Native Bridge<br/>• WebView postMessage API<br/>• Native payment integration<br/>• Same backend communication"]
+                    RN_BRIDGE["🔗 React Native Bridge<br/>• WebView postMessage<br/>• Native payments<br/>• Backend communication"]
                 end
             end
         end
 
-        RN_BACKEND["🚀 Go Backend API Server (Identical)<br/>• Same endpoints and logic<br/>• Universal CORS configuration<br/>• Platform-agnostic payment flow"]
+        RN_BACKEND["🚀 Go Backend (Identical)<br/>• Same endpoints<br/>• Universal CORS<br/>• Platform-agnostic"]
     end
 
-    RN_HOST -->|Same HTTP API| RN_BACKEND
-    RN_BRIDGE -.->|WebView postMessage| RN_HOST
+    RN_HOST -->|"HTTP API"| RN_BACKEND
+    RN_BRIDGE -.->|"WebView postMessage"| RN_HOST
 
-    style MOBILE fill:#f9f9f9,stroke:#333,stroke-width:2px
-    style RN_HOST fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px
-    style WEBVIEW fill:#f1f8e9,stroke:#33691e,stroke-width:2px
-    style RN_FLUTTER fill:#fce4ec,stroke:#880e4f,stroke-width:2px
-    style RN_BRIDGE fill:#fff8e1,stroke:#ff6f00,stroke-width:2px
-    style RN_BACKEND fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
+    style MOBILE fill:#f8f9fa,stroke:#000,stroke-width:2px,color:#000
+    style RN_HOST fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
+    style WEBVIEW fill:#e8f5e8,stroke:#2e7d32,stroke-width:3px,color:#000
+    style RN_FLUTTER fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#000
+    style RN_BRIDGE fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#000
+    style RN_BACKEND fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#000
 ```
 
 ## 🎯 Learning Objectives
