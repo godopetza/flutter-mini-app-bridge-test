@@ -1,11 +1,11 @@
 {
-    "name": "mini_app",
-    "short_name": "mini_app",
+    "name": "Mini App Bridge Test",
+    "short_name": "Bridge Test",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#667eea",
+    "theme_color": "#667eea",
+    "description": "Production-ready super app ecosystem demonstrating JavaScript bridge patterns (WeChat/Alipay style)",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

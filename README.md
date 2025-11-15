@@ -1,74 +1,64 @@
 # Mini App Bridge Test Project
 
+<div align="center">
+  <img src="flutter-mini-app-bridge.png" alt="Mini App Bridge Test - Super App Architecture Demo" width="600">
+</div>
+
 A production-ready mini app ecosystem test environment for learning and testing JavaScript bridge patterns used in super apps (WeChat, Alipay style). This project demonstrates secure bidirectional communication between a host application and embedded mini apps with complete payment verification flow.
 
 ## 🏗️ Architecture Overview
 
 ### Current Implementation (Web Host)
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                    Complete Test Environment                        │
-├─────────────────────────────────────────────────────────────────────┤
-│  🌐 Browser                                                         │
-│  ┌───────────────────────────────────────────────────────────────┐  │
-│  │ 🏦 Host App (Bank App Simulation)                             │  │
-│  │ ┌─────────────────────────────────────────────────────────┐   │  │
-│  │ │ 📱 Flutter Mini App (Bus Booking)                      │   │  │
-│  │ │ ┌─────────────────────────────────────────────────┐     │   │  │
-│  │ │ │ 🔗 JavaScript Bridge                           │     │   │  │
-│  │ │ │ • User Info Exchange                            │     │   │  │
-│  │ │ │ • PIN Validation (0000/1111/2222)              │     │   │  │
-│  │ │ │ • Payment Initiation                            │     │   │  │
-│  │ │ │ • Ticket Delivery                               │     │   │  │
-│  │ │ └─────────────────────────────────────────────────┘     │   │  │
-│  │ └─────────────────────────────────────────────────────────┘   │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-│                               │                                     │
-│                               │ HTTP API + CORS                     │
-│                               ▼                                     │
-│  ┌───────────────────────────────────────────────────────────────┐  │
-│  │ 🚀 Go Backend API Server                                     │  │
-│  │ • Bus routes management                                       │  │
-│  │ • Booking creation & confirmation                             │  │
-│  │ • Payment processing & validation                             │  │
-│  │ • In-memory storage                                           │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph ENV ["🌐 Complete Test Environment"]
+        subgraph BROWSER ["Browser"]
+            subgraph HOST ["🏦 Host App (Bank Simulation)"]
+                subgraph FLUTTER ["📱 Flutter Mini App (Bus Booking)"]
+                    BRIDGE["🔗 JavaScript Bridge<br/>• User Info Exchange<br/>• PIN Validation (0000/1111/2222)<br/>• Payment Initiation<br/>• Ticket Delivery"]
+                end
+            end
+        end
+
+        BACKEND["🚀 Go Backend API Server<br/>• Bus routes management<br/>• Booking creation & confirmation<br/>• Payment processing & validation<br/>• In-memory storage"]
+    end
+
+    HOST -->|HTTP API + CORS| BACKEND
+    BRIDGE -.->|PostMessage API| HOST
+
+    style ENV fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style HOST fill:#e1f5fe,stroke:#01579b,stroke-width:2px
+    style FLUTTER fill:#f3e5f5,stroke:#4a148c,stroke-width:2px
+    style BRIDGE fill:#fff3e0,stroke:#e65100,stroke-width:2px
+    style BACKEND fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
 
 ### React Native Alternative
 
-```
-┌─────────────────────────────────────────────────────────────────────┐
-│                     React Native Integration                       │
-├─────────────────────────────────────────────────────────────────────┤
-│  📱 Mobile Device                                                  │
-│  ┌───────────────────────────────────────────────────────────────┐  │
-│  │ 🏦 React Native Host App                                     │  │
-│  │ ┌─────────────────────────────────────────────────────────┐   │  │
-│  │ │ 🌐 WebView Container                                    │   │  │
-│  │ │ ┌─────────────────────────────────────────────────┐     │   │  │
-│  │ │ │ 📱 Flutter Web Mini App                         │     │   │  │
-│  │ │ │ ┌─────────────────────────────────────────┐     │     │   │  │
-│  │ │ │ │ 🔗 React Native Bridge                  │     │     │   │  │
-│  │ │ │ │ • WebView postMessage API               │     │     │   │  │
-│  │ │ │ │ • Native payment integration            │     │     │   │  │
-│  │ │ │ │ • Same backend communication            │     │     │   │  │
-│  │ │ │ └─────────────────────────────────────────┘     │     │   │  │
-│  │ │ └─────────────────────────────────────────────────┘     │   │  │
-│  │ └─────────────────────────────────────────────────────────┘   │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-│                               │                                     │
-│                               │ Same HTTP API                       │
-│                               ▼                                     │
-│  ┌───────────────────────────────────────────────────────────────┐  │
-│  │ 🚀 Go Backend API Server (Identical)                         │  │
-│  │ • Same endpoints and logic                                    │  │
-│  │ • Universal CORS configuration                                │  │
-│  │ • Platform-agnostic payment flow                              │  │
-│  └───────────────────────────────────────────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────┘
+```mermaid
+graph TB
+    subgraph MOBILE ["📱 Mobile Device"]
+        subgraph RN_HOST ["🏦 React Native Host App"]
+            subgraph WEBVIEW ["🌐 WebView Container"]
+                subgraph RN_FLUTTER ["📱 Flutter Web Mini App"]
+                    RN_BRIDGE["🔗 React Native Bridge<br/>• WebView postMessage API<br/>• Native payment integration<br/>• Same backend communication"]
+                end
+            end
+        end
+
+        RN_BACKEND["🚀 Go Backend API Server (Identical)<br/>• Same endpoints and logic<br/>• Universal CORS configuration<br/>• Platform-agnostic payment flow"]
+    end
+
+    RN_HOST -->|Same HTTP API| RN_BACKEND
+    RN_BRIDGE -.->|WebView postMessage| RN_HOST
+
+    style MOBILE fill:#f9f9f9,stroke:#333,stroke-width:2px
+    style RN_HOST fill:#e3f2fd,stroke:#0d47a1,stroke-width:2px
+    style WEBVIEW fill:#f1f8e9,stroke:#33691e,stroke-width:2px
+    style RN_FLUTTER fill:#fce4ec,stroke:#880e4f,stroke-width:2px
+    style RN_BRIDGE fill:#fff8e1,stroke:#ff6f00,stroke-width:2px
+    style RN_BACKEND fill:#e8f5e8,stroke:#1b5e20,stroke-width:2px
 ```
 
 ## 🎯 Learning Objectives
@@ -559,47 +549,44 @@ The host app includes a comprehensive PIN validation system for testing differen
 
 ### Payment Flow by PIN
 
-#### Success Flow (PIN: 0000)
+```mermaid
+flowchart TD
+    START([User Enters 4-Digit PIN]) --> CHECK{PIN Value?}
 
-```
-1. User enters 0000
-2. ✅ PIN validation passes
-3. 💳 Local payment processing (1.5s)
-4. 🔄 Backend confirmation API call
-5. ✅ Payment confirmed
-6. 🎫 Ticket issued to Flutter app
-7. 📄 Success screen displayed
-```
+    CHECK -->|0000| SUCCESS[✅ PIN Validation Passes]
+    CHECK -->|1111| FAIL[❌ PIN Validation Fails]
+    CHECK -->|2222| PENDING[⏳ Triggers Pending Status]
+    CHECK -->|Other| INVALID[❓ Invalid PIN]
 
-#### Failed Flow (PIN: 1111)
+    SUCCESS --> PROCESS[💳 Local Payment Processing<br/>1.5s delay]
+    PROCESS --> BACKEND[🔄 Backend Confirmation API Call]
+    BACKEND --> CONFIRMED[✅ Payment Confirmed]
+    CONFIRMED --> TICKET[🎫 Ticket Issued to Flutter App]
+    TICKET --> DISPLAY[📄 Success Screen Displayed]
 
-```
-1. User enters 1111
-2. ❌ PIN validation fails
-3. 🚫 Error message displayed
-4. 🔄 PIN input cleared and refocused
-5. 🔁 User can retry with different PIN
-6. ⚠️ No backend API calls made
-```
+    FAIL --> ERROR1[🚫 Error Message Displayed]
+    ERROR1 --> CLEAR1[🔄 PIN Input Cleared]
+    CLEAR1 --> RETRY1[🔁 User Can Retry]
+    RETRY1 --> NOTE1[⚠️ No Backend Calls Made]
+    NOTE1 --> START
 
-#### Pending Flow (PIN: 2222)
+    PENDING --> REVIEW[🕐 3-Second Manual Review]
+    REVIEW --> RANDOM{🎲 Random Outcome<br/>70% Approve / 30% Reject}
+    RANDOM -->|Approved| PROCESS
+    RANDOM -->|Rejected| ERROR2[🚫 Pending Rejected]
+    ERROR2 --> CLEAR2[🔄 Allow Retry]
+    CLEAR2 --> START
 
-```
-1. User enters 2222
-2. ⏳ Triggers pending status
-3. 🕐 3-second manual review simulation
-4. 🎲 Random outcome (70% approve / 30% reject)
-   - If approved: Continue to backend confirmation
-   - If rejected: Show error and allow retry
-```
+    INVALID --> HELP[💡 Shows Valid PIN Examples<br/>0000, 1111, 2222]
+    HELP --> CLEAR3[🔄 Clears Input]
+    CLEAR3 --> START
 
-#### Invalid Flow (Other PINs)
-
-```
-1. User enters any other 4-digit PIN
-2. ❓ Shows helpful error message
-3. 💡 Displays valid PIN examples (0000, 1111, 2222)
-4. 🔄 Clears input and allows retry
+    style START fill:#e3f2fd,stroke:#1976d2,stroke-width:2px
+    style SUCCESS fill:#e8f5e8,stroke:#388e3c,stroke-width:2px
+    style FAIL fill:#ffebee,stroke:#d32f2f,stroke-width:2px
+    style PENDING fill:#fff3e0,stroke:#f57c00,stroke-width:2px
+    style INVALID fill:#fafafa,stroke:#616161,stroke-width:2px
+    style DISPLAY fill:#e8f5e8,stroke:#388e3c,stroke-width:3px
 ```
 
 ### Testing PIN Scenarios
@@ -742,6 +729,7 @@ if (isInIframe) {
 - [Backend API Documentation](backend/README.md)
 - [Flutter Mini App Guide](mini_app/README.md)
 - [Host App Bridge Guide](host-app/README.md)
+- **[📦 Distribution Strategy Guide](DISTRIBUTION.md)** - Comprehensive guide on super app mini-app distribution models, vendor strategies, and deployment options
 
 ## 🚀 Production Deployment
 
