@@ -12,7 +12,7 @@ A production-ready mini app ecosystem test environment for learning and testing 
 
 ```mermaid
 flowchart TB
-    subgraph ENV ["🌐 Complete Test Environment"]
+    subgraph ENV ["🌐 Test Environment"]
         subgraph BROWSER ["Browser"]
             subgraph HOST ["🏦 Host App"]
                 subgraph FLUTTER ["📱 Flutter Mini App"]
@@ -24,8 +24,8 @@ flowchart TB
         BACKEND["🚀 Go Backend API Server<br/>• Routes & bookings<br/>• Payment processing<br/>• In-memory storage"]
     end
 
-    HOST -->|"HTTP API"| BACKEND
-    BRIDGE -.->|"PostMessage"| HOST
+    HOST -->|HTTP API| BACKEND
+    BRIDGE -.->|PostMessage| HOST
 
     style ENV fill:#f8f9fa,stroke:#000,stroke-width:2px,color:#000
     style BROWSER fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
@@ -33,6 +33,9 @@ flowchart TB
     style FLUTTER fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#000
     style BRIDGE fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#000
     style BACKEND fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#000
+
+    linkStyle 0 stroke:#000,stroke-width:3px
+    linkStyle 1 stroke:#000,stroke-width:3px
 ```
 
 ### React Native Alternative
@@ -51,8 +54,8 @@ flowchart TB
         RN_BACKEND["🚀 Go Backend (Identical)<br/>• Same endpoints<br/>• Universal CORS<br/>• Platform-agnostic"]
     end
 
-    RN_HOST -->|"HTTP API"| RN_BACKEND
-    RN_BRIDGE -.->|"WebView postMessage"| RN_HOST
+    RN_HOST -->|HTTP API| RN_BACKEND
+    RN_BRIDGE -.->|WebView postMessage| RN_HOST
 
     style MOBILE fill:#f8f9fa,stroke:#000,stroke-width:2px,color:#000
     style RN_HOST fill:#e3f2fd,stroke:#1565c0,stroke-width:3px,color:#000
@@ -60,6 +63,9 @@ flowchart TB
     style RN_FLUTTER fill:#fce4ec,stroke:#c2185b,stroke-width:3px,color:#000
     style RN_BRIDGE fill:#fff3e0,stroke:#f57c00,stroke-width:3px,color:#000
     style RN_BACKEND fill:#f3e5f5,stroke:#7b1fa2,stroke-width:3px,color:#000
+
+    linkStyle 0 stroke:#000,stroke-width:3px
+    linkStyle 1 stroke:#000,stroke-width:3px
 ```
 
 ## 🎯 Learning Objectives
