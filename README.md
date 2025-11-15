@@ -1,7 +1,8 @@
 # JavaScript Mini App Bridge Test Project
 
 <div align="center">
-  <img src="flutter-mini-app-bridge.png" alt="Mini App Bridge Test - Super App Architecture Demo" width="600">
+  <img src="flutter-mini-app-bridge.png#gh-light-mode-only" alt="Mini App Bridge Test - Light Mode" width="600">
+  <img src="flutter-mini-app-bridge_white.png#gh-dark-mode-only" alt="Mini App Bridge Test - Dark Mode" width="600">
 </div>
 
 A production-ready mini app ecosystem test environment for learning and testing JavaScript bridge patterns used in super apps (WeChat, Alipay style). This project demonstrates secure bidirectional communication between a host application and embedded mini apps with complete payment verification flow.
