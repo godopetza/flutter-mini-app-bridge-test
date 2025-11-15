@@ -1,10 +1,19 @@
-# Mini App Bridge Test Project
+# JavaScript Mini App Bridge Test Project
 
 <div align="center">
   <img src="flutter-mini-app-bridge.png" alt="Mini App Bridge Test - Super App Architecture Demo" width="600">
 </div>
 
 A production-ready mini app ecosystem test environment for learning and testing JavaScript bridge patterns used in super apps (WeChat, Alipay style). This project demonstrates secure bidirectional communication between a host application and embedded mini apps with complete payment verification flow.
+
+## 🌐 Live Demo - Test Now!
+
+**Try the working demo immediately:**
+
+- **🏠 Project Homepage**: [https://godopetza.github.io/flutter-mini-app-bridge-test/](https://godopetza.github.io/flutter-mini-app-bridge-test/)
+- **🏦 Host App**: [https://godopetza.github.io/flutter-mini-app-bridge-test/host-app/](https://godopetza.github.io/flutter-mini-app-bridge-test/host-app/) ← **Start here!**
+- **📱 Flutter Mini App**: [https://godopetza.github.io/flutter-mini-app-bridge-test/mini_app/](https://godopetza.github.io/flutter-mini-app-bridge-test/mini_app/)
+- **🔧 Backend API**: [https://flutter-mini-app-bridge-test-production.up.railway.app](https://flutter-mini-app-bridge-test-production.up.railway.app)
 
 ## 🏗️ Architecture Overview
 
@@ -742,14 +751,16 @@ if (isInIframe) {
 
 This project is configured for automated deployment with GitHub Actions and Railway.
 
-### 🌐 Live Demo URLs
+### 🌐 Your Deployment URLs
 
-Once deployed, your project will be available at:
+Once you deploy your own fork, your project will be available at:
 
-- **🏠 Project Homepage**: `https://godopetza.github.io/flutter-mini-app-bridge-test/`
-- **🏦 Host App**: `https://godopetza.github.io/flutter-mini-app-bridge-test/host-app/`
-- **📱 Flutter Mini App**: `https://godopetza.github.io/flutter-mini-app-bridge-test/mini_app/`
-- **🔧 Backend API**: `https://flutter-mini-app-bridge-test-production.up.railway.app`
+- **🏠 Project Homepage**: `https://your-username.github.io/flutter-mini-app-bridge-test/`
+- **🏦 Host App**: `https://your-username.github.io/flutter-mini-app-bridge-test/host-app/`
+- **📱 Flutter Mini App**: `https://your-username.github.io/flutter-mini-app-bridge-test/mini_app/`
+- **🔧 Backend API**: `https://your-project-name-production.up.railway.app`
+
+> **Note**: Replace `your-username` with your GitHub username and `your-project-name` with your Railway project name after deployment.
 
 ### ⚡ Auto-Deployment Setup
 
@@ -832,7 +843,7 @@ The project automatically detects and configures for different environments:
 
 **GitHub Actions (Frontend):**
 
-- `RAILWAY_BACKEND_URL`: Optional override (defaults to `https://flutter-mini-app-bridge-test-production.up.railway.app`)
+- `RAILWAY_BACKEND_URL`: Optional override (defaults to your Railway app URL)
 
 ## 🤝 Contributing
 
